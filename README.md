@@ -10,7 +10,7 @@ Pre-development stub — nogforge activates after the forgekit → BitlaForge pi
 
 ## Roadmap / ToDos
 
-- [ ] **Tier editor** — visual editing of `/etc/nog/tier-pins.toml`: browse Tier 1/2/3 assignments, move packages between tiers (`nog pin` under the hood), toggle `manual_signoff` expert mode, show each package's hold-window countdown. Requested for the KognogOS Development edition workflow (Balih, 2026-07-30) — the GUI companion to the Tier Reference Guide.
+- [ ] **Tier editor** — visual editing of `/etc/nog/tier-pins.toml`: browse Tier 1/2/3 assignments, move packages between tiers (`nog pin` under the hood), toggle `manual_signoff` expert mode, show each package's hold-window countdown. Requested for the KognogOS Development edition workflow (Javier, 2026-07-30) — the GUI companion to the Tier Reference Guide.
 - [ ] Unified search/install/update across nog + AUR (+ Flatpak/Snap later)
 - [ ] Update dashboard — the `nog update` Ready/Held/Unknown report, interactive
 - [ ] forgekit adoption as the UI foundation
