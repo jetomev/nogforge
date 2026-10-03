@@ -12,6 +12,18 @@
 - **nog 1.6.0 comes first:** `--json` output, the "keep these back" choice, the password window. Part of nog#7.
 - **Flatpak and Snap** installs come later (nog#7; nog already *updates* both with holds). **nogForge stays beta (0.x) until everything is there, Flatpak and Snap included.** Beta phases, each tested by Javier: 0.1 Home/Search/install-remove · 0.2 Update · 0.3 Tiers · 0.4 Settings.
 
+## 0.1 beta — built 3 Oct (09:00–09:45), waiting on Javier's run
+
+- [x] nog 1.6.0-rc.1 (in nog's repo): `list/search/update --json`, `--keep`, `NOG_ASKPASS` → `sudo -A` + helper `--sudoflags -A`; test package `~/Programs/nog/dist-rc/nog-1.6.0rc1-1-x86_64.pkg.tar.zst`.
+- [x] nogForge 0.1: Dashboard (Updates + Yours tables, Recent, Space), Home (Yours/All/AUR, Type, Find, Locked rows), Search (repos + AUR), Update (nog's plan, read-only; "Update the Ready Ones" hands off), History (nog's run logs). Changes: review → the terminal is handed to nog (`App.suspend`), pacman's "Proceed?" and the AUR recipe review kept (nog rulings F-6 #38, #26), password via the system window. Manual (7 pages), --version/--help, closing note + run log.
+- [x] 21 tests (stand-in nog), 0 warnings; console check clean on all 5 screens. Found and fixed on the way: crash on a text console (console colour names unreadable to Rich), shading hid the selection on a console, a missing nog said in technical words, Show's count not redrawn, an unclosed file.
+- [x] **0.2 and 0.3 built too (09:35–09:45)**, on top of 0.1 (Javier: "go full development"): Update with choices (Space unticks; nog's `--keep` answer unticks partners; Update sends `--keep`; What changed compares versions; Restart Now (r) red / Later (l) selected after a kernel), Promote, Tiers (soonest first, filter, change tier via `nog pin`, promote). nog's plan JSON gained `holds` (tier wait days). 27 tests; console clean on all six screens. Manual pages for Update and Tiers.
+- [ ] **Ask Javier:** release these as one beta (0.3.0) after his run, or 0.1 first? Title still says 0.1.0.
+- [ ] **Javier's run**: `testing/20261003 - Test Matrix for nogForge v0-1-0.md` §6 (includes 6.8b–d for choices and Tiers).
+- [ ] **0.4 Settings — not started on purpose:** it writes /etc files (nog.conf holds, pacman.conf, repositories with key trust). nog has no command for those yet; it needs either nog commands (`nog config …`, `nog repo add/remove`) or a grubForge-style privileged helper. A design question for Javier, and security-sensitive.
+- [ ] **Nothing committed yet**: the GPG passphrase had expired (the pinentry window timed out at 09:05 with Javier away). Commit in steps once he unlocks it: nog (`feat` + rc script), nogForge (0.1 code, tests, manual, README, matrix).
+- [ ] After the run: Test Results; nog 1.6.0 release (docs, version surfaces, tag, GitHub, AUR) BEFORE nogForge relies on it publicly; nogForge 0.1 tag + GitHub release (beta, no AUR yet: "beta until Flatpak and Snap").
+
 ## Next
 - [x] Project kit (3 Oct): `CLAUDE.md` (the decided rules), this TODO, GitHub topics completed (forge-suite, linux, aur-package, ai-collaboration, human-ai), Vault folder. Phase issues open with the design. Old stub code (`nogforge/managers/base.py`, never wired) is replaced by the build.
 - [ ] **Old commit message `f16c086` (30 Jul) uses the book persona name.** Javier: "remove it" (3 Oct). The history rewrite (filter-branch + re-sign + force-push) was **blocked by Claude Code's permission system**; nothing changed. Javier decides: allow it, or run it himself. A full backup bundle was made first (session scratchpad). The name was also removed from this TODO's current text.
