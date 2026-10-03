@@ -2,7 +2,7 @@
 
 **Updates**: how many updates are ready and how many nog is holding back, per source (core, extra, multilib, chaotic-aur, the AUR, Flatpak, Snap) and per tier. It comes from nog's real plan, which takes up to a minute to check every source. **Review Updates (u)** opens Update.
 
-**Yours**: the packages you chose (not the ones they brought along), per source and tier. **Review Packages (r)** opens Search.
+**Yours**: the packages you chose (not the ones they brought along), per source and tier. **Review Packages (r)** opens Install, to see the whole picture.
 
 **Recent**: the last three things nog did. **Open History (h)** shows them all.
 

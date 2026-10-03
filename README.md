@@ -40,21 +40,19 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 ### Dashboard
 ![Dashboard](docs/screenshots/01-dashboard.svg)
 
-### Home
-![Home](docs/screenshots/02-home.svg)
+### In-System
+![In-System](docs/screenshots/02-in-system.svg)
 
-### Search, and the review before installing
-![Search](docs/screenshots/03-search.svg)
+### Install, and the review before installing
+![Install](docs/screenshots/03-install.svg)
 ![Review](docs/screenshots/04-review.svg)
 
-### Update: keep one back, promote what can't wait
+### Update: one kept back, one promoted
 ![Update](docs/screenshots/05-update.svg)
 
-### Tiers
-![Tiers](docs/screenshots/06-tiers.svg)
-
-### History
-![History](docs/screenshots/07-history.svg)
+### History: Activity and nog Logs
+![Activity](docs/screenshots/06-activity.svg)
+![nog Logs](docs/screenshots/07-nog-logs.svg)
 
 *Made from the running app (`python docs/screenshots/generate.py`) with a stand-in nog and a sample package list.*
 

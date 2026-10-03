@@ -2,19 +2,20 @@
 
 | Key | Does |
 |---|---|
-| **1 – 6**, or Ctrl + the underlined letter | Dashboard, Home, Search, Update, Tiers, History |
+| **1 – 6** | Dashboard, In-System, Install, Update, Activity, nog Logs |
 | **u** | open Update · on Update: update the ticked ones |
-| **r** | review packages (Search) |
-| **h** | open History |
+| **r** | review packages (Install) |
+| **h** | open History (Activity) |
 | **c** | check for updates (Update) · clean up (Dashboard) |
+| **p** | Repositories (In-System, Install) |
+| **/** | search |
 | **Space** | tick or untick an update |
-| **Enter** | the row's option: install, remove, promote, or change its tier |
-| **Del** | remove the selected package (Home) |
-| **/** | find |
+| **Enter** | the row's option: install, remove, promote · on nog Logs: open the log |
+| **Del** | remove the selected package (In-System) |
 | **Tab** / **Shift+Tab** | next / previous field or button |
 | **Esc** | leave a field, close a window |
 | **F1** | help on this screen |
 | **?** | all keys |
 | **q** or **Ctrl+Q** | quit |
 
-In windows: **t**, **p**, **r**, **l**, **c** press the button with that letter. Letter keys never act while you're typing in a field.
+The mouse: a click on a row's button acts; anywhere else on the row it only selects. Letter keys never act while you're typing in a field; in an empty Search box the screen keys 1–6 still switch screens. In windows, the letter in brackets presses that button.

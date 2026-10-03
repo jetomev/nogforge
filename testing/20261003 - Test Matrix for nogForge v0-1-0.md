@@ -35,3 +35,33 @@ Design: `docs/design/v0.1-screens.html` (approved by Javier, 3 Oct 2026). nogFor
 | 6.11 *(optional)* | Ctrl+Alt+F3, log in, `python3 ~/Programs/nogforge/main.py` | everything readable; letters for badges; no password window there, so nog asks in the terminal | |
 
 Tell Claude "done": nog's logs and nogForge's run log are read from the machine, and the results go in `testing/20261003 - Test Results for nogForge v0-1-0.md`.
+
+
+## 7 · Javier's first run (3 Oct, 12:15–12:40) — what came back
+
+Read from the machine: nog 1.6.0rc1 installed with nog (12:15); `nog unlock archiso --promote` from nogForge (12:17, archiso 90 → 91, done). Javier: *"Dashboard: looks amazing! … This is a work of art my friend."*
+
+| Finding | Fixed in | Check |
+|---|---|---|
+| **F-1** closing after a promote crashed (the closing note had no words for "promote") | `cli.summary`: words for every change, never a crash | test: every kind of change |
+| **F-2** Search "calc" listed perl first (pacman matches what a package *provides*), marked "Yours" though it's only a dependency | Install keeps only results with the words in the name or description, ranked (exact name, starts with, contains, description; repositories before the AUR); "✓ Installed" for dependencies | test: ranking; real "calc" |
+| **F-3** the shaded rows and the selected row were the same colour | shade = a step lighter than the background; selection lighter again; the button lighter still on the selected row | pictures |
+| **F-4** a ticked update couldn't be unticked | Space and a click on the box both tick and untick | test: click on the box |
+| **F-5** Promote installed at once while ready updates waited | nog 1.6.0-rc.2 `--promote`: the package becomes ready (ticked, "promoted by you"), partners follow ("promoted with …"), it installs with the rest | tests; real: linux-zen brings its headers |
+| **F-6** (found while fixing) opening Install put the cursor in Search and the next screen key was typed into it | while Search is empty, 1–6 switch screens | console test |
+| **F-7** (found by a new test) a click on a row's name opened the install/remove review | a click on a row only selects it; only the button acts | test: row click vs button click |
+
+**Changes asked for:** Home → **In-System**; Search → **Install**; one filter bar on both (**Search** box + **🔍 Search (Enter)** button, Show, Type, **Tier**, **Repositories (p)** with every repository in pacman.conf and the AUR); a **Repository** column; names and versions cut with "…"; the options as **buttons** (grey, blue under the mouse); **Tiers removed** ("isn't actually needed"); **History ▾ Activity / nog Logs**, with a run's full log in a window.
+
+## 8 · Javier's second run
+
+| ID | Do | Expect | Result |
+|---|---|---|---|
+| 8.1 | `nog install ~/Programs/nog/dist-rc/nog-1.6.0rc2-1-x86_64.pkg.tar.zst` | `nog --version` says 1.6.0-rc.2 | |
+| 8.2 | `python3 ~/Programs/nogforge/main.py`; **2** In-System | the filter bar; Show Yours (254); Type; Tier; Repositories (p) opens a window with core, extra, multilib, chaotic-aur, AUR; the Repository column; Remove buttons grey, blue under the mouse; the selected row clearly different from the shaded ones | |
+| 8.3 | **3** Install: type `calc`, click **🔍 Search** | calc near the top, no perl; Yours/Installed on what you have; Type, Tier, Repositories narrow it | |
+| 8.4 | **4** Update: click a ticked box, or Space | it unticks ("kept back by you"); partners untick with the reason; again to tick | |
+| 8.5 | On Held, **↑ Promote** | it moves to Ready, ticked, "promoted by you"; nothing installs yet | |
+| 8.6 *(optional)* | **u** | nog in the terminal with what you kept back and promoted; What changed afterwards | |
+| 8.7 | **History ▸ Activity** and **History ▸ nog Logs**; Enter on the grubforge line | the tables; the window with every package of that run | |
+| 8.8 | **q** | the closing note, no crash | |

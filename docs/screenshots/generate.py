@@ -75,9 +75,20 @@ SAMPLE = {
 STAND_IN = '''#!/usr/bin/env python3
 import json, os, sys
 d = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
-if sys.argv[1:] == ["--version"]:
+a = sys.argv[1:]
+if a == ["--version"]:
     print("nog 1.6.0"); sys.exit(0)
-print(json.dumps(d[sys.argv[1]]))
+arg = lambda f: a[a.index(f) + 1].split(",") if f in a else []
+if a[0] == "update":
+    keep, promote = arg("--keep"), arg("--promote")
+    p = d["update"]
+    ready = [r for r in p["ready"] if r["name"] not in keep] + \
+        [{**r, "note": "promoted by you"} for r in p["held"] if r["name"] in promote]
+    held = [{**r, "note": "kept back by you", "kept_back": True, "ready_on": None} for r in p["ready"]
+            if r["name"] in keep] + [r for r in p["held"] if r["name"] not in promote]
+    print(json.dumps({**p, "ready": ready, "held": held}))
+else:
+    print(json.dumps(d[a[0]]))
 '''
 
 
@@ -114,13 +125,13 @@ async def main() -> None:
             shot(app, "01-dashboard")
             await pilot.press("2")
             await pilot.pause(0.6)
-            shot(app, "02-home")
+            shot(app, "02-in-system")
             await pilot.press("3")
             for ch in "paint":
                 await pilot.press(ch)
-            await pilot.press("enter")
+            await pilot.click("#in-go")
             await pilot.pause(1.5)
-            shot(app, "03-search")
+            shot(app, "03-install")
             await pilot.press("enter")
             await pilot.pause(0.8)
             shot(app, "04-review")
@@ -129,16 +140,22 @@ async def main() -> None:
             await pilot.pause(0.6)
             ready = app.query_one("#up-ready")
             ready.focus()
-            ready.highlighted = 1
+            ready.highlighted = [r.package.name for r in ready.rows].index("thunderbird")
             await pilot.press("space")                 # keep one back
             await pilot.pause(1.0)
+            held = app.query_one("#up-held")
+            held.focus()
+            held.highlighted = [r.package.name for r in held.rows].index("gimp")
+            await pilot.press("enter")                 # promote one
+            await pilot.pause(1.0)
+            ready.focus()
             shot(app, "05-update")
             await pilot.press("5")
-            await pilot.pause(0.6)
-            shot(app, "06-tiers")
+            await pilot.pause(0.5)
+            shot(app, "06-activity")
             await pilot.press("6")
             await pilot.pause(0.5)
-            shot(app, "07-history")
+            shot(app, "07-nog-logs")
     print("nogForge screenshots done.")
 
 
