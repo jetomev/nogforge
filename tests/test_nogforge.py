@@ -1,0 +1,640 @@
+"""nogForge 0.1, tested against a stand-in nog: a small script that answers
+like nog 1.6.0 (``--json``) from recorded data, so no test ever installs,
+removes or updates anything. Run: python -m unittest discover tests"""
+
+from __future__ import annotations
+
+import gzip
+import json
+import os
+import re
+import tempfile
+import time
+import unittest
+from pathlib import Path
+
+from nogforge import catalogue, nog, records
+from nogforge.nog import NogError, Package
+from nogforge.ui.packages import filtered, installed_row, search_row
+
+ROOT = Path(__file__).resolve().parents[1]
+
+LIST = {"nog": "1.6.0", "kind": "list", "packages": [
+    {"name": "steam", "version": "1.0.0.87-3", "description": "Valve's digital software delivery system",
+     "tier": 3, "source": "multilib", "explicit": True, "size": 20475439, "installed": 1787527681,
+     "groups": [], "required_by": [], "protected": None},
+    {"name": "gimp", "version": "3.2.6-2", "description": "GNU Image Manipulation Program", "tier": 3,
+     "source": "extra", "explicit": True, "required_by": [], "protected": None},
+    {"name": "linux-zen", "version": "7.2.7.zen1-1", "description": "The Linux ZEN kernel", "tier": 1,
+     "source": "extra", "explicit": True, "required_by": [], "protected": "the system needs this to start"},
+    {"name": "glibc", "version": "2.44", "description": "GNU C Library", "tier": 1, "source": "core",
+     "explicit": False, "required_by": ["bash"], "protected": "part of the base system"},
+    {"name": "fresh-editor-bin", "version": "0.5.1-1", "description": "A terminal text editor", "tier": 3,
+     "source": "aur", "explicit": True, "required_by": [], "protected": None},
+    {"name": "libfoo", "version": "1.0-1", "description": "A library", "tier": 3, "source": "extra",
+     "explicit": False, "required_by": ["gimp"], "protected": "needed by gimp"},
+]}
+SEARCH = {"nog": "1.6.0", "kind": "search", "query": "krita", "results": [
+    {"name": "krita", "version": "6.0.4-2", "description": "Edit and paint images", "source": "extra",
+     "installed": False, "tier": 3},
+    {"name": "gimp", "version": "3.2.6-2", "description": "GNU Image Manipulation Program", "source": "extra",
+     "installed": True, "tier": 3},
+    {"name": "krita-git", "version": "6.1.0-1", "description": "Krita, git version", "source": "aur",
+     "installed": False, "tier": 3},
+]}
+PLAN = {"nog": "1.6.0", "kind": "plan",
+        "sources": {"aur": "checked", "flatpak": "checked", "snap": "not installed", "chaotic_aur_off": False},
+        "ready": [{"name": "tzdata", "source": "core", "tier": 3, "old": "2026d-1", "new": "2026e-1",
+                   "note": "hold just expired"},
+                  {"name": "breezy", "source": "extra", "tier": 3, "old": "3.3.21-2", "new": "3.3.22-1",
+                   "note": "19 days past window"}],
+        "held": [{"name": "linux-zen", "source": "extra", "tier": 1, "old": "7.2.7.zen1-1", "new": "7.2.8.zen1-2",
+                  "note": "28 days remaining", "days_remaining": 28, "ready_on": int(time.time()) + 28 * 86400,
+                  "kept_back": False, "coupled_to": None},
+                 {"name": "grubforge", "source": "AUR", "tier": 2, "old": "1.1.3-1", "new": "2.0.0-1",
+                  "note": "14 days remaining", "days_remaining": 14, "ready_on": int(time.time()) + 14 * 86400,
+                  "kept_back": False, "coupled_to": None}],
+        "unknown": [], "holds": {"tier1_days": 30, "tier2_days": 15, "tier3_days": 7}}
+
+STAND_IN = '''#!/usr/bin/env python3
+import json, sys, os
+data = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
+args = sys.argv[1:]
+if args == ["--version"]:
+    print("nog 1.6.0"); sys.exit(0)
+if "--json" not in args:
+    print("stand-in: only --json", file=sys.stderr); sys.exit(2)
+print("nog: text that must not reach the JSON", file=sys.stderr)
+print(json.dumps(data[args[0]]))
+'''
+
+
+class StandIn(unittest.TestCase):
+    """A temporary folder with a stand-in nog, its answers, a catalogue and logs."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        data = self.dir / "answers.json"
+        data.write_text(json.dumps({"list": LIST, "search": SEARCH, "update": PLAN}))
+        b = self.dir / "nog"
+        b.write_text(STAND_IN)
+        b.chmod(0o755)
+        self._env = {k: os.environ.get(k) for k in ("NOGFORGE_NOG", "NOGFORGE_TEST_DATA", "DISPLAY",
+                                                     "WAYLAND_DISPLAY", "SUDO_ASKPASS")}
+        os.environ["NOGFORGE_NOG"] = str(b)
+        os.environ["NOGFORGE_TEST_DATA"] = str(data)
+        self.logs = self.dir / "logs"
+        self.logs.mkdir()
+        (self.logs / "20261002 nog-runs.csv").write_text(
+            "date,time,user,command,status,outcome\n"
+            "10/02/2026,04:52 PM,javier,install grubforge,0,done\n"
+            "10/02/2026,01:00 PM,javier,update,0,done\n")
+        (self.logs / "20261003 nog-runs.csv").write_text(
+            "date,time,user,command,status,outcome\n"
+            "10/03/2026,12:04 AM,javier,install bitlaforge,0,done\n"
+            "10/03/2026,12:30 AM,javier,remove nothing-here,1,failed\n"
+            "not,a,real,line\n")
+        self.cache = self.dir / "pkg"
+        self.cache.mkdir()
+        (self.cache / "steam-1.0-1-x86_64.pkg.tar.zst").write_bytes(b"x" * 1000)
+        (self.cache / "steam-1.0-1-x86_64.pkg.tar.zst.sig").write_bytes(b"x" * 99)
+        self.apps = {"steam": catalogue.App("Steam", "Launcher for the Steam software distribution service",
+                                            ("Game",)),
+                     "gimp": catalogue.App("GNU Image Manipulation Program", "High-end image creation",
+                                           ("Graphics", "2DGraphics")),
+                     "krita": catalogue.App("Krita", "Digital Painting, Creative Freedom", ("Graphics",))}
+
+    def tearDown(self):
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+class TalkingToNog(StandIn):
+    def test_the_three_answers(self):
+        pk = nog.installed()
+        self.assertEqual(len(pk), 6)
+        steam = next(p for p in pk if p.name == "steam")
+        self.assertEqual((steam.tier, steam.source, steam.explicit, steam.protected), (3, "multilib", True, None))
+        self.assertEqual(next(p for p in pk if p.name == "linux-zen").protected, "the system needs this to start")
+        self.assertEqual([p.name for p in nog.search("krita")], ["krita", "gimp", "krita-git"])
+        self.assertEqual(len(nog.plan()["ready"]), 2)
+
+    def test_no_nog(self):
+        os.environ["NOGFORGE_NOG"] = str(self.dir / "missing")
+        with self.assertRaises(NogError):
+            nog.installed()
+
+    def test_an_older_nog_is_named(self):
+        old = self.dir / "old-nog"
+        old.write_text("#!/bin/sh\necho \"error: unexpected argument '--json' found\" >&2\nexit 2\n")
+        old.chmod(0o755)
+        os.environ["NOGFORGE_NOG"] = str(old)
+        with self.assertRaises(NogError) as e:
+            nog.installed()
+        self.assertIn("older than 1.6.0", str(e.exception))
+
+    def test_password_window_when_there_is_one(self):
+        ask = self.dir / "askpass"
+        ask.write_text("#!/bin/sh\n")
+        ask.chmod(0o755)
+        os.environ["SUDO_ASKPASS"] = str(ask)
+        os.environ["DISPLAY"] = ":0"
+        cmd, env = nog.change_command("install", ["krita"])
+        self.assertEqual(cmd[1:], ["install", "krita"])
+        self.assertEqual((env["NOG_ASKPASS"], env["SUDO_ASKPASS"]), ("1", str(ask)))
+        os.environ.pop("DISPLAY")
+        os.environ.pop("WAYLAND_DISPLAY", None)
+        _cmd, env = nog.change_command("remove", ["steam"])
+        self.assertNotIn("NOG_ASKPASS", env, "no desktop: the terminal asks, not a window that can't open")
+
+
+class Catalogue(unittest.TestCase):
+    XML = """<?xml version="1.0"?><components>
+      <component type="desktop-application"><pkgname>steam</pkgname>
+        <name>Steam</name><name xml:lang="ar">ستيم</name>
+        <summary xml:lang="ar">مشغل</summary><summary>Launcher for Steam</summary>
+        <categories><category>Game</category></categories></component>
+      <component type="addon"><pkgname>krita-plugin</pkgname><name>Plugin</name></component>
+    </components>"""
+
+    def test_english_names_and_the_cache(self):
+        d = Path(tempfile.mkdtemp())
+        with gzip.open(d / "extra.xml.gz", "wt") as f:
+            f.write(self.XML)
+        cache = d / "apps.json"
+        apps = catalogue.load(d, cache)
+        self.assertEqual(apps["steam"].name, "Steam", "the untranslated name, not the first one in the file")
+        self.assertEqual(apps["steam"].summary, "Launcher for Steam")
+        self.assertNotIn("krita-plugin", apps, "add-ons aren't apps")
+        self.assertTrue(cache.exists())
+        (d / "extra.xml.gz").unlink()
+        with gzip.open(d / "extra.xml.gz", "wt") as f:     # the stamp still matches: a different time counts
+            f.write(self.XML)
+        self.assertEqual(catalogue.load(d, cache)["steam"].name, "Steam")
+
+    def test_badges(self):
+        a = {"steam": catalogue.App("Steam", "", ("Game",)), "vlc": catalogue.App("VLC", "", ("AudioVideo",))}
+        self.assertEqual(catalogue.kind_of("steam", a), ("🎮", "GA", "Games"))
+        self.assertEqual(catalogue.kind_of("vlc", a)[2], "Sound & video")
+        self.assertEqual(catalogue.kind_of("libfoo", a), catalogue.OTHER)
+
+
+class Records(StandIn):
+    def test_history_from_nogs_logs(self):
+        runs = records.runs(self.logs)
+        self.assertEqual([r.what for r in runs], ["Remove nothing-here", "Install bitlaforge", "Install grubforge",
+                                                  "Update"])
+        self.assertFalse(runs[0].ok)
+        self.assertTrue(runs[1].ok)
+
+    def test_cache(self):
+        self.assertEqual(records.cache_size(self.cache), (1000, 1))
+        self.assertEqual(records.size_words(9.6 * 1024 ** 3), "9.6 GB")
+
+
+class Rows(StandIn):
+    def test_locked_or_remove_or_install(self):
+        pk = nog.installed()
+        by = {p.name: p for p in pk}
+        self.assertEqual(installed_row(by["steam"]).option_role, "danger")
+        self.assertEqual(installed_row(by["linux-zen"]).option_role, "muted")
+        self.assertEqual(search_row(Package("krita", "6", installed=False)).option_role, "ok")
+        self.assertEqual(search_row(Package("gimp", "3", installed=True)).option_role, "muted")
+
+    def test_show_type_find(self):
+        pk = nog.installed()
+        names = lambda ps: [p.name for p in ps]
+        self.assertEqual(names(filtered(pk, "yours", "All types", "", self.apps)),
+                         ["steam", "gimp", "linux-zen", "fresh-editor-bin"])
+        self.assertEqual(names(filtered(pk, "all", "All types", "", self.apps))[-1], "libfoo")
+        self.assertEqual(names(filtered(pk, "aur", "All types", "", self.apps)), ["fresh-editor-bin"])
+        self.assertEqual(names(filtered(pk, "yours", "Graphics", "", self.apps)), ["gimp"])
+        self.assertEqual(names(filtered(pk, "all", "All types", "manipulation", self.apps)), ["gimp"],
+                         "Find matches descriptions, the catalogue's included")
+
+
+class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        super().setUp()
+        from unittest import mock
+        # this computer's own Flatpaks and snaps stay out of the test's numbers
+        for name, n in (("count_flatpaks", 2), ("count_snaps", 1)):
+            patcher = mock.patch(f"nogforge.app.{name}", return_value=n)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def app(self):
+        from nogforge.app import NogForgeApp
+        a = NogForgeApp(apps=self.apps, logs=self.logs, cache_dir=self.cache)
+        a.ran = []
+        a.run_in_terminal = lambda cmd, env: (a.ran.append(cmd[1:]), 0)[1]
+        return a
+
+    async def until(self, pilot, cond, seconds=8.0):
+        end = time.time() + seconds
+        while not cond() and time.time() < end:
+            await pilot.pause(0.1)
+        return cond()
+
+    async def test_dashboard_tables(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            await pilot.pause(0.3)
+            def text(wid):          # what is drawn on screen, line by line
+                w = app.query_one(wid)
+                return "\n".join(w.render_line(y).text for y in range(w.size.height))
+            self.assertIn("Total", text("#db-updates"))
+            self.assertRegex(text("#db-updates"), r"Total\s+2\s+2\s+1\s+1\s+2")
+            self.assertRegex(text("#db-yours"), r"Total\s+7\s", "4 chosen packages + 2 Flatpaks + 1 snap")
+            self.assertIn("Install bitlaforge", text("#db-recent"))
+            self.assertIn("1000 B", text("#db-space"))
+
+    async def test_a_locked_package_never_reaches_nog(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("2")
+            await pilot.pause(0.3)
+            pl = app.query_one("#hm-list")
+            pl.highlighted = [r.package.name for r in pl.rows].index("linux-zen")
+            await pilot.press("delete")
+            await pilot.pause(0.4)
+            self.assertNotEqual(type(app.screen).__name__, "ReviewDialog")
+            self.assertEqual(app.ran, [])
+
+    async def test_remove_is_reviewed_then_handed_to_nog(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("2")
+            await pilot.pause(0.3)
+            pl = app.query_one("#hm-list")
+            pl.highlighted = [r.package.name for r in pl.rows].index("steam")
+            await pilot.press("delete")
+            await pilot.pause(0.5)
+            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
+            await pilot.press("escape")                        # cancel: nothing runs
+            await pilot.pause(0.3)
+            self.assertEqual(app.ran, [])
+            await pilot.press("delete")
+            await pilot.pause(0.5)
+            await pilot.click("#go")
+            await pilot.pause(0.5)
+        self.assertEqual(app.ran, [["remove", "steam"]])
+        self.assertEqual(app.changes, [("remove", "steam", 0)])
+
+    async def test_search_then_install(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("3")
+            await pilot.pause(0.2)
+            for ch in "krita":
+                await pilot.press(ch)
+            await pilot.press("enter")
+            pl = app.query_one("#sr-list")
+            self.assertTrue(await self.until(pilot, lambda: len(pl.rows) == 3))
+            self.assertEqual(app.focused, pl, "after a search the results have the keys")
+            self.assertEqual([r.option_role for r in pl.rows], ["ok", "muted", "ok"])
+            await pilot.press("enter")                         # Krita: Install
+            await pilot.pause(0.5)
+            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
+            searches = []
+            real = app.run_search
+            app.run_search = lambda q: (searches.append(q), real(q))
+            await pilot.click("#go")
+            await pilot.pause(0.5)
+            self.assertEqual(app.ran, [["install", "krita"]])
+            self.assertEqual(searches, ["krita"], "after a change the results are read again")
+            app.query_one("#sr-aur").set_value(False)
+            await pilot.pause(0.3)
+            self.assertEqual([r.package.name for r in pl.rows], ["krita", "gimp"], "No AUR hides krita-git")
+
+    async def test_update_shows_nogs_plan(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            await pilot.press("4")
+            await pilot.pause(0.4)
+            ready = app.query_one("#up-ready").rows
+            held = app.query_one("#up-held").rows
+            self.assertEqual([r.package.name for r in ready], ["tzdata", "breezy"])
+            self.assertEqual(held[0].version, "7.2.7.zen1-1 → 7.2.8.zen1-2")
+            self.assertTrue(held[0].extra, "Ready on is filled from nog's date")
+            await pilot.click("#up-run")
+            await pilot.pause(0.5)
+            self.assertEqual(app.ran, [["update"]])
+
+    async def test_tiers_soonest_first_filter_change_and_promote(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            await pilot.press("5")
+            await pilot.pause(0.4)
+            tl = app.query_one("#tr-list")
+            self.assertEqual([r.package.name for r in tl.rows], ["grubforge", "linux-zen"], "soonest first")
+            self.assertIn("Tier 1 waits 30 days", str(app.query_one("#tr-summary").render()))
+            self.assertTrue(app.query_one("#tr-show").region.width > 8, "the Show list is drawn")
+            app.query_one("#tr-show").value = "1"
+            await pilot.pause(0.3)
+            self.assertEqual([r.package.name for r in tl.rows], ["linux-zen"])
+            app.query_one("#tr-show").value = "0"
+            await pilot.pause(0.3)
+            tl.focus()
+            tl.highlighted = 0                                      # grubforge, Tier 2
+            await pilot.press("enter")
+            await pilot.pause(0.4)
+            self.assertEqual(type(app.screen).__name__, "TierDialog")
+            app.screen.query_one("#td-tier").set_value("3")
+            await pilot.press("t")
+            await pilot.pause(0.5)
+            self.assertEqual(app.ran, [["pin", "grubforge", "--tier", "3"]])
+            await pilot.press("enter")                              # the same row again: promote this time
+            await pilot.pause(0.4)
+            await pilot.press("p")
+            await pilot.pause(0.5)
+            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
+            await pilot.click("#go")
+            await pilot.pause(0.5)
+            self.assertEqual(app.ran[-1], ["unlock", "grubforge", "--promote"])
+
+    async def test_nog_missing_is_said_not_crashed(self):
+        os.environ["NOGFORGE_NOG"] = str(self.dir / "missing")
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: bool(app.plan_error)))
+            await pilot.pause(0.3)
+            w = app.query_one("#db-yours")
+            self.assertIn("isn't installed", "".join(w.render_line(y).text for y in range(w.size.height)))
+            self.assertIsNone(app._exception)
+
+    async def test_every_screen_fits_100_columns(self):
+        from textual.widgets import Button, Input
+        app = self.app()
+        async with app.run_test(size=(100, 30)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            for key in "123456":
+                await pilot.press(key)
+                await pilot.pause(0.5)
+                for b in app.screen.query(Button):
+                    if b.display and b.region.width:
+                        self.assertIn(str(b.label), b.render_line(0).text, f"screen {key}: {b.label!r} cut off")
+                for w in app.screen.query("*"):
+                    if isinstance(w, Input):
+                        continue
+                    self.assertFalse(w.display and w.show_horizontal_scrollbar, f"screen {key}: {w!r} scrolls sideways")
+                for pl in app.screen.query("PackageList"):
+                    for r in pl.rows:
+                        from nogforge.ui.packages import colours
+                        t = pl.draw(r, 1, max(pl.size.width - 2, 80), colours(app), "")
+                        for line in t.split("\n"):
+                            self.assertLessEqual(line.cell_len, max(pl.size.width - 2, 80), f"{r.package.name}")
+
+    async def test_every_screen_on_a_text_console(self):
+        """Found by the console check: Rich can't read the console's colour names."""
+        from nogforge.app import NogForgeApp
+        app = NogForgeApp(apps=self.apps, logs=self.logs, cache_dir=self.cache, console=True)
+        app.run_in_terminal = lambda cmd, env: 0
+        async with app.run_test(size=(100, 30)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            for key in "123456":
+                await pilot.press(key)
+                await pilot.pause(0.5)
+                self.assertIsNone(app._exception, f"screen {key} on a console")
+            await pilot.press("3")
+            for ch in "krita":
+                await pilot.press(ch)
+            await pilot.press("enter")
+            await pilot.pause(1.0)
+            self.assertIsNone(app._exception)
+            self.assertTrue(app.query_one("#sr-list").rows[0].option.startswith("Install"), "words, not marks")
+
+    async def test_closing_note(self):
+        from nogforge.cli import summary
+        app = self.app()
+        app.changes = [("install", "krita", 0), ("remove", "steam", 1)]
+        heading, lines, level = summary(app)
+        self.assertEqual(heading, "nogForge · 1 change made")
+        self.assertEqual(lines, ["Installed krita.", "Remove steam: nog stopped (status 1)."])
+        self.assertEqual(level, "warn")
+
+
+class CommandLineAndNames(unittest.TestCase):
+    def test_version_help(self):
+        import contextlib
+        import io
+        from nogforge import __version__
+        from nogforge.cli import main
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(main(["--version"]), 0)
+            self.assertEqual(main(["--help"]), 0)
+        self.assertIn(f"nogForge {__version__}", out.getvalue())
+        self.assertIn("nog 1.6.0 or newer", out.getvalue())
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(main(["--nope"]), 2)
+
+    def test_every_screen_has_its_manual_page(self):
+        from forgekit import load_pages
+        from nogforge.app import MANUAL_DIR, NogForgeApp
+        ids = {pid for pid, _t, _m in load_pages(MANUAL_DIR)}
+        for m in NogForgeApp.MENU:
+            if m["kind"] == "section":
+                self.assertIn(m["id"], ids, f"F1 on {m['title']} would open nothing")
+        self.assertIn("keys", ids)
+
+    def test_the_names(self):
+        """nogForge, lowercase n; and the book persona never appears in this project."""
+        for p in list((ROOT / "nogforge").rglob("*.py")) + list((ROOT / "nogforge" / "manual").glob("*.md")):
+            text = p.read_text()
+            self.assertEqual(re.findall(r".{0,20}NogForge(?!App).{0,20}", text), [], p.name)
+            self.assertNotIn("Ba" + "lih", text, p.name)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+# ── 0.2: Update with choices ─────────────────────────────────────────────────
+SMART = r'''#!/usr/bin/env python3
+"""A stand-in nog with a memory: --keep holds what it's told and what must
+stay with it; update and promote change the versions it reports."""
+import json, os, sys
+d = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
+state_f = os.environ["NOGFORGE_TEST_DATA"] + ".state"
+state = json.load(open(state_f)) if os.path.exists(state_f) else {}
+a = sys.argv[1:]
+log = open(os.environ["NOGFORGE_TEST_DATA"] + ".ran", "a")
+if a == ["--version"]:
+    print("nog 1.6.0"); sys.exit(0)
+def plan(keep):
+    ready, held = [], list(d["plan"]["held"])
+    stay = set(keep)
+    for k in keep:
+        stay |= set(d["couples"].get(k, []))
+    for r in d["plan"]["ready"]:
+        if r["name"] in keep:
+            held.append({**r, "note": "kept back by you", "kept_back": True, "coupled_to": None, "ready_on": None})
+        elif r["name"] in stay:
+            partner = next(k for k in keep if r["name"] in d["couples"].get(k, []))
+            held.append({**r, "note": f"blocked by {partner}", "kept_back": False, "coupled_to": partner,
+                         "ready_on": None})
+        else:
+            ready.append(r)
+    return {**d["plan"], "ready": ready, "held": held}, stay
+keep = a[a.index("--keep") + 1].split(",") if "--keep" in a else []
+if "--json" in a:
+    if a[0] == "list":
+        pk = [{**p, "version": state.get(p["name"], p["version"])} for p in d["list"]["packages"]]
+        print(json.dumps({**d["list"], "packages": pk}))
+    elif a[0] == "update":
+        print(json.dumps(plan(keep)[0]))
+    sys.exit(0)
+log.write(" ".join(a) + "\n")
+if a[0] == "update":
+    p, stay = plan(keep)
+    for r in p["ready"]:
+        state[r["name"]] = r["new"]
+elif a[0] == "unlock":
+    r = next(r for r in d["plan"]["held"] if r["name"] == a[1])
+    state[r["name"]] = r["new"]
+json.dump(state, open(state_f, "w"))
+'''
+
+CHOICE_LIST = {"nog": "1.6.0", "kind": "list", "packages": [
+    {"name": n, "version": v, "description": "", "tier": t, "source": "extra", "explicit": True,
+     "required_by": [], "protected": None}
+    for n, v, t in (("tzdata", "2026d-1", 3), ("ldb", "2:4.24.7-1", 3), ("libwbclient", "2:4.24.7-1", 3),
+                    ("linux-zen", "7.2.7.zen1-1", 1))]}
+CHOICE_PLAN = {"nog": "1.6.0", "kind": "plan", "sources": {}, "unknown": [],
+               "ready": [{"name": "tzdata", "source": "core", "tier": 3, "old": "2026d-1", "new": "2026e-1",
+                          "note": "hold just expired"},
+                         {"name": "ldb", "source": "extra", "tier": 3, "old": "2:4.24.7-1", "new": "2:4.25.0-1",
+                          "note": "hold just expired"},
+                         {"name": "libwbclient", "source": "extra", "tier": 3, "old": "2:4.24.7-1",
+                          "new": "2:4.25.0-1", "note": "hold just expired"}],
+               "held": [{"name": "linux-zen", "source": "extra", "tier": 1, "old": "7.2.7.zen1-1",
+                         "new": "7.2.8.zen1-2", "note": "28 days remaining", "ready_on": int(time.time()) + 86400 * 28,
+                         "kept_back": False, "coupled_to": None}]}
+
+
+class Choices(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        import subprocess
+        self.dir = Path(tempfile.mkdtemp())
+        self.data = self.dir / "answers.json"
+        self.data.write_text(json.dumps({"list": CHOICE_LIST, "plan": CHOICE_PLAN,
+                                         "couples": {"ldb": ["libwbclient"]}}))
+        b = self.dir / "nog"
+        b.write_text(SMART)
+        b.chmod(0o755)
+        self._env = {k: os.environ.get(k) for k in ("NOGFORGE_NOG", "NOGFORGE_TEST_DATA")}
+        os.environ["NOGFORGE_NOG"], os.environ["NOGFORGE_TEST_DATA"] = str(b), str(self.data)
+        self.subprocess = subprocess
+        (self.dir / "logs").mkdir()
+
+    def tearDown(self):
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def ran(self) -> list[str]:
+        f = Path(str(self.data) + ".ran")
+        return f.read_text().splitlines() if f.exists() else []
+
+    def app(self):
+        from nogforge.app import NogForgeApp
+        a = NogForgeApp(apps={}, logs=self.dir / "logs", cache_dir=self.dir)
+        a.run_in_terminal = lambda cmd, env: self.subprocess.run(cmd, env=env).returncode
+        a.restarted = False
+        a.restart = lambda: setattr(a, "restarted", True)
+        return a
+
+    async def until(self, pilot, cond, seconds=8.0):
+        end = time.time() + seconds
+        while not cond() and time.time() < end:
+            await pilot.pause(0.1)
+        return cond()
+
+    async def open_update(self, app, pilot):
+        self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+        await pilot.press("4")
+        await pilot.pause(0.4)
+        return app.query_one("#up-ready")
+
+    async def test_untick_and_nog_says_what_stays_back(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            ready.focus()
+            ready.highlighted = 1                                  # ldb
+            await pilot.press("space")
+            self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
+            await pilot.pause(0.3)
+            rows = {r.package.name: r for r in ready.rows}
+            self.assertEqual((rows["ldb"].tick, rows["ldb"].note), (False, "kept back by you"))
+            self.assertEqual((rows["libwbclient"].tick, rows["libwbclient"].note),
+                             (False, "must stay back with ldb"), "nog's coupling, shown under the box")
+            self.assertTrue(rows["tzdata"].tick)
+            self.assertIn("(1)", str(app.query_one("#up-run").label))
+            ready.highlighted = 2                                  # libwbclient: ticking it ticks ldb again
+            await pilot.press("space")
+            await pilot.pause(0.4)
+            self.assertEqual(app.keep, set())
+            self.assertTrue(all(r.tick for r in ready.rows))
+
+    async def test_update_the_ticked_ones_then_what_changed(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            ready.focus()
+            ready.highlighted = 1
+            await pilot.press("space")
+            self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
+            await pilot.press("u")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
+            self.assertEqual(self.ran(), ["update --keep ldb"], "only what you unticked: nog adds the rest")
+            text = " ".join(str(w.render()) for w in app.screen.query("Static"))
+            self.assertIn("1 updated", text)
+            self.assertIn("Kept back by you: ldb, libwbclient", text)
+            self.assertFalse(app.screen.query("#restart"), "no kernel: no restart offered")
+            await pilot.press("c")
+            await pilot.pause(0.3)
+            self.assertFalse(app.restarted)
+
+    async def test_promote_a_kernel_then_restart_or_later(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await self.open_update(app, pilot)
+            held = app.query_one("#up-held")
+            held.focus()
+            await pilot.press("enter")
+            await pilot.pause(0.5)
+            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
+            await pilot.click("#go")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
+            self.assertEqual(self.ran(), ["unlock linux-zen --promote"])
+            self.assertTrue(app.screen.query("#restart"), "a new kernel: Restart Now (r) offered")
+            self.assertEqual(app.focused.id, "later", "Enter alone never restarts")
+            await pilot.press("enter")
+            await pilot.pause(0.3)
+            self.assertFalse(app.restarted)
+
+    async def test_restart_now(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await self.open_update(app, pilot)
+            app.query_one("#up-held").focus()
+            await pilot.press("enter")
+            await pilot.pause(0.5)
+            await pilot.click("#go")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
+            await pilot.press("r")
+            await pilot.pause(0.3)
+            self.assertTrue(app.restarted)
