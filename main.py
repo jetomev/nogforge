@@ -1,7 +1,8 @@
-"""NogForge — Universal Package Manager TUI for Kognog OS."""
+"""nogForge — entry point."""
 
-from nogforge.app import NogForgeApp
+import sys
+
+from nogforge.cli import main
 
 if __name__ == "__main__":
-    app = NogForgeApp()
-    app.run()
+    sys.exit(main())
