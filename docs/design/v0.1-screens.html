@@ -1,0 +1,560 @@
+<title>nogForge Screen Designs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one reading column; each screen = a short brief, a 100-column terminal drawing, then what it decides. Same family as the grubForge 2.0 design page. */
+:root {
+  --bg: #f6f5fa;
+  --fg: #23212e;
+  --muted: #5d5a70;
+  --rule: #dcd9e8;
+  --panel: #ffffff;
+  --accent: #6c4fc7;
+  --accent-soft: #ece6fb;
+  --warn-soft: #fbf1d9;
+  --warn-ink: #7a5300;
+  --bad-soft: #fbe3e6;
+  --bad-ink: #8a1d33;
+  --ok-ink: #1f6b3a;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+  /* Terminal drawings use the app's own palette (Catppuccin Mocha) in both page themes. */
+  --t-base: #1e1e2e; --t-mantle: #181825; --t-crust: #11111b;
+  --t-s0: #313244; --t-s1: #45475a; --t-s2: #585b70; --t-ov: #7f849c;
+  --t-sub: #a6adc8; --t-text: #cdd6f4; --t-blue: #89b4fa; --t-mauve: #cba6f7;
+  --t-green: #a6e3a1; --t-yellow: #f9e2af; --t-red: #f38ba8; --t-peach: #fab387; --t-box: #2b4a7a;
+  /* Javier's KognogOS-theme, for the theme preview */
+  --k-bg: #1a1a1a; --k-fg: #cdd6f4; --k-cur: #f5e0dc; --k-pink: #f5c2e7; --k-teal: #94e2d5;
+  --k-white: #bac2de; --k-bblack: #585b70; --k-bwhite: #a6adc8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15141c; --fg: #e6e3f2; --muted: #a29fb8; --rule: #2e2c3d; --panel: #1d1b27;
+    --accent: #b9a3ff; --accent-soft: #2a2442; --warn-soft: #3a3020; --warn-ink: #f3d49a;
+    --bad-soft: #3a1e26; --bad-ink: #f6b3c2; --ok-ink: #9fe0b2;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15141c; --fg: #e6e3f2; --muted: #a29fb8; --rule: #2e2c3d; --panel: #1d1b27;
+  --accent: #b9a3ff; --accent-soft: #2a2442; --warn-soft: #3a3020; --warn-ink: #f3d49a;
+  --bad-soft: #3a1e26; --bad-ink: #f6b3c2; --ok-ink: #9fe0b2;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.55; padding: 0 16px; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 40px 80px; display: grid; gap: 56px; }
+.wrap > * { min-width: 0; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.01em; }
+h2 { font-size: 27px; }
+h3 { font-size: 19px; }
+p { margin: 0; }
+.stack { display: grid; gap: 14px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 19px; color: var(--muted); }
+code, kbd { font-family: var(--font-mono); font-size: 0.86em; }
+kbd { border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--panel); white-space: nowrap; }
+a { color: var(--accent); }
+ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+section { display: grid; gap: 20px; min-width: 0; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 15px; }
+.toc a { text-decoration: none; border-bottom: 1px solid var(--rule); }
+/* Terminal drawing */
+.term { background: var(--t-base); color: var(--t-text); border-radius: 8px; overflow-x: auto; border: 1px solid #2c2c3e; }
+.term pre { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 12.6px; line-height: 1.42; white-space: pre; }
+.cap { font-size: 14.5px; color: var(--muted); }
+.m { color: var(--t-sub); } .d { color: var(--t-ov); } .a { color: var(--t-blue); } .v { color: var(--t-mauve); }
+.ok { color: var(--t-green); } .w { color: var(--t-yellow); } .er { color: var(--t-red); } .pc { color: var(--t-peach); }
+.b { font-weight: 700; } .u { text-decoration: underline; }
+.hdr { background: var(--t-crust); } .bar { background: var(--t-mantle); }
+.sel { background: var(--t-box); color: var(--t-text); } .zb { background: rgba(137,180,250,0.08); } .dng { background: #f38ba8; color: #1e1e2e; font-weight: 700; } .con .zb { background: #1c1c1c; } .fld { background: var(--t-s0); } .btn { background: var(--t-s1); color: var(--t-text); }
+.pri { background: var(--t-box); color: var(--t-text); font-weight: 700; } .act { background: var(--t-box); font-weight: 700; }
+.foc { background: var(--t-s0); outline: 1px solid var(--t-blue); }
+/* the theme preview, drawn in Javier's KognogOS-theme */
+.kt, .kg, .kbl, .kr, .ky, .kcur { background: var(--k-bg); }
+.kt { color: var(--k-fg); } .kg { color: var(--t-green); } .kbl { color: var(--t-blue); font-weight: 700; }
+.kr { color: var(--t-red); } .ky { color: var(--t-yellow); } .kcur { background: var(--k-cur); }
+.c0 { color: var(--k-bg); } .c1 { color: var(--t-red); } .c2 { color: var(--t-green); } .c3 { color: var(--t-yellow); }
+.c4 { color: var(--t-blue); } .c5 { color: var(--k-pink); } .c6 { color: var(--k-teal); } .c7 { color: var(--k-white); }
+.c8 { color: var(--k-bblack); } .c15 { color: var(--k-bwhite); }
+.k1a { color: var(--k-bg); text-shadow: 0 0 1px #777; } .kcd { color: var(--k-fg); } .kcu { color: var(--k-cur); }
+/* Console drawing: the 8-colour Linux console */
+.con { background: #000; border-color: #333; }
+.con pre { color: #c0c0c0; }
+.c-bl { background: #0000aa; color: #fff; } .c-cy { color: #55ffff; } .c-y { color: #ffff55; } .c-g { color: #55ff55; } .c-pri { background: #00aaaa; color: #000; }
+/* Tables */
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+tr.grp th { color: var(--accent); padding-top: 18px; }
+td code { white-space: nowrap; }
+/* Decisions and notes */
+.decide { background: var(--accent-soft); border-radius: 10px; padding: 18px 20px; display: grid; gap: 10px; }
+.decide h3 { color: var(--accent); }
+.decide ol { gap: 12px; }
+.rec { font-weight: 700; }
+.note { background: var(--warn-soft); color: var(--warn-ink); border-radius: 8px; padding: 12px 16px; font-size: 15.5px; }
+.bad { background: var(--bad-soft); color: var(--bad-ink); border-radius: 10px; padding: 16px 20px; display: grid; gap: 10px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+.two > * { min-width: 0; }
+.shot { margin: 0; display: grid; gap: 6px; }
+.shot img { width: 100%; border-radius: 8px; border: 1px solid var(--rule); display: block; }
+.shot figcaption { font-size: 14px; color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+<header class="stack">
+  <div class="eyebrow">nogForge · design proposal · 3 October 2026</div>
+  <h1>nogForge, screen by screen</h1>
+  <p class="lede prose">nog's wrapper, with what Pamac does, in a terminal. Every screen drawn before any code is written, at exactly <b>100 columns</b>. The numbers are this desktop's, read on 3 October; anything made up for the picture says "example".</p>
+  <p class="prose">Your brief: <em>"I want to do the wrapper, but also have the functionalities of Pamac GUI on a TUI."</em> The look is grubForge 2.0's, like alacrittyForge and bitlaForge: boxes on the Dashboard, forms in Settings, a review before anything changes, the hint line at the bottom.</p>
+  <nav class="toc" aria-label="Contents">
+    <a href="#decided">Decided</a><a href="#first">nog first</a><a href="#dashboard">Dashboard</a><a href="#home">Home</a><a href="#search">Search</a><a href="#update">Update</a><a href="#tiers">Tiers</a><a href="#settings">Settings</a><a href="#remove">Removing</a><a href="#history">History</a><a href="#password">Password</a><a href="#phases">Beta phases</a><a href="#questions">Answered</a>
+  </nav>
+</header>
+
+<section id="decided">
+  <div class="decide">
+    <h3>Decided · Javier, 3 October</h3>
+    <ol>
+      <li><b>Screens:</b> Dashboard (<em>"sexy"</em>), Home, Search, Update (<em>"looking forward to it"</em>), Tiers (<em>"Amazing!"</em>), Settings, History, Help, Quit.</li>
+      <li><b>System packages can't be removed</b> unless nothing needs them: Tier 1, Arch's base set, and anything another package needs show a lock and the reason.</li>
+      <li><b>The password works like grubForge's:</b> the system's own window; nogForge never sees it.</li>
+      <li><b>Repositories can be added and removed</b>, with signatures required and the key checked before it's trusted.</li>
+      <li><b>nog 1.6.0 comes first</b>: <em>"Yes"</em>.</li>
+      <li><b>Beta (0.x) until everything is there, Flatpak and Snap included</b>: <em>"no full release until we have everything figured out"</em>.</li>
+      <li><b>Version 2 of this page (Javier's notes):</b> every list a spreadsheet-style table with shaded alternate rows; package rows are <b>Icon · Name · Version · Tier</b> (written out) <b>· Option</b> on the right, with the description underneath and no heading; options at the right of their row, like Promote; screen buttons at the top only, never repeated at the bottom; buttons read <b>"Review Updates (u)"</b>, the format for every Forge Suite app from now on (what's already shipped changes in its next version).</li>
+    </ol>
+  </div>
+</section>
+
+<section id="first">
+  <h2>nog does the thinking; nogForge shows it</h2>
+  <p class="prose">Tiers, hold dates and which packages must move together are nog's. nogForge never works them out itself: two copies of that logic would sooner or later disagree. So nog 1.6.0 learns three things first:</p>
+  <div class="two">
+    <div class="card"><b>1 · Speak in data</b><p>A <code>--json</code> option: the update plan, tiers, holds and search, as data nogForge can draw tables from instead of reading text off a screen.</p></div>
+    <div class="card"><b>2 · Keep these back</b><p>Given the updates you unticked, nog answers what else must stay back with them ("mesa needs lib32-mesa and vulkan-radeon to match"). No broken combination can be built.</p></div>
+    <div class="card"><b>3 · The password window</b><p>When nogForge calls it, nog asks for the password through the system's window instead of the terminal.</p></div>
+  </div>
+</section>
+
+<section id="dashboard">
+  <h2>1 · Dashboard</h2>
+  <p class="prose">Two tables like nog's own summary: <b>Updates</b> per source, ready and held, by tier (from nog's last plan, 2 October 16:52), and <b>Yours</b>, the packages you chose, per source and tier. Then a short history and the space old downloads take.</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar"> <span class="act"> Dashboard </span>  <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="a">╭─ Updates ───────────────────────────────────╮</span>  <span class="a">╭─ Yours ─────────────────────────────────────╮</span>  
+  <span class="a">│</span> <span class="a b">Source      Ready Held Tier 1 Tier 2 Tier 3 </span><span class="a">│</span>  <span class="a">│</span> <span class="a b">Source      Yours  Tier 1  Tier 2  Tier 3   </span><span class="a">│</span>  
+  <span class="a">│</span> core        0     14   9      0      5      <span class="a">│</span>  <span class="a">│</span> core        16     3       0       13       <span class="a">│</span>  
+  <span class="a">│</span> <span class="zb">extra       4     45   3      2      44     </span><span class="a">│</span>  <span class="a">│</span> <span class="zb">extra       203    1       11      191      </span><span class="a">│</span>  
+  <span class="a">│</span> multilib    1     5    2      0      4      <span class="a">│</span>  <span class="a">│</span> multilib    3      0       0       3        <span class="a">│</span>  
+  <span class="a">│</span> <span class="zb">chaotic-aur 0     2    0      0      2      </span><span class="a">│</span>  <span class="a">│</span> <span class="zb">chaotic-aur 19     0       0       19       </span><span class="a">│</span>  
+  <span class="a">│</span> AUR         0     3    0      1      2      <span class="a">│</span>  <span class="a">│</span> AUR         13     0       2       11       <span class="a">│</span>  
+  <span class="a">│</span> <span class="zb">Flatpak     0     0    0      0      0      </span><span class="a">│</span>  <span class="a">│</span> <span class="zb">Flatpak     2      0       0       2        </span><span class="a">│</span>  
+  <span class="a">│</span> Snap        0     0    0      0      0      <span class="a">│</span>  <span class="a">│</span> Snap        1      0       0       1        <span class="a">│</span>  
+  <span class="a">│</span> <span class="b">Total       5     69   14     3      57     </span><span class="a">│</span>  <span class="a">│</span> <span class="b">Total       257    4       13      240      </span><span class="a">│</span>  
+  <span class="a">│</span>                                             <span class="a">│</span>  <span class="a">│</span>                                             <span class="a">│</span>  
+  <span class="a">│</span> <span class="pri"> Review Updates (u) </span>                        <span class="a">│</span>  <span class="a">│</span> <span class="pri"> Review Packages (r) </span>                       <span class="a">│</span>  
+  <span class="a">╰─────────────────────────────────────────────╯</span>  <span class="a">╰─────────────────────────────────────────────╯</span>  
+                                                                                                    
+  <span class="a">╭─ Recent ────────────────────────────────────╮</span>  <span class="a">╭─ Space ─────────────────────────────────────╮</span>  
+  <span class="a">│</span> <span class="a b">When         What                           </span><span class="a">│</span>  <span class="a">│</span> <span class="m">Package cache</span> <span class="b">9.7 GB</span> <span class="d">· 3,667 files</span>          <span class="a">│</span>  
+  <span class="a">│</span> Oct 3 00:04  Install bitlaforge       <span class="ok">✓</span>     <span class="a">│</span>  <span class="a">│</span> <span class="m">Old downloads nog can let go of: 6.1 GB</span>     <span class="a">│</span>  
+  <span class="a">│</span> Oct 2 16:52  Install grubforge        <span class="ok">✓</span>     <span class="a">│</span>  <span class="a">│</span> <span class="d">(an example: nog clean says the real one)</span>   <span class="a">│</span>  
+  <span class="a">│</span> Oct 2 13:00  Update: 5 in, 69 held    <span class="ok">✓</span>     <span class="a">│</span>  <span class="a">│</span>                                             <span class="a">│</span>  
+  <span class="a">│</span>                                             <span class="a">│</span>  <span class="a">│</span> <span class="btn"> Clean Up (c) </span>                              <span class="a">│</span>  
+  <span class="a">│</span> <span class="btn"> Open History (h) </span>                          <span class="a">│</span>  <span class="a">╰─────────────────────────────────────────────╯</span>  
+  <span class="a">╰─────────────────────────────────────────────╯</span>                                                   
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">u</span> <span class="d">updates</span>  ·  <span class="a">r</span> <span class="d">packages</span>  ·  <span class="a">1-7</span> <span class="d">screens</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                               </span></pre></div>
+  <p class="cap">Yours counts 257: the 254 you installed from repositories and the AUR, plus 2 Flatpaks and 1 snap app. Checked while drawing this: linux-lts and mkinitcpio, held since July, aren't stuck. Their 30-day wait is over (the 30 September fix works); only the 7-day safety rule on their newest build (1 October) remains. They go in on 8 October.</p>
+</section>
+
+<section id="home">
+  <h2>2 · Home</h2>
+  <p class="prose">Your installed packages: the 254 you chose by default; all 1,518 (or only the 24 from the AUR) on the Show list. A terminal can't draw app icons, so each one gets a <b>category badge</b> from Arch's app catalogue, the same one Pamac uses: 🎮 games, 🎨 graphics, 🎵 sound and video, 📝 office, ✉ internet, ⚙ system, 📦 everything else. On a text console the badges become letters.</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard  <span class="act"> Home </span>  Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="d">Show</span> <span class="fld"> Yours (254)      ▾ </span>  <span class="d">Type</span> <span class="fld"> All types   ▾ </span>  <span class="d">Find</span> <span class="fld">                  </span>                          
+                                                                                                    
+<span class="a b">     Name                  Version                 Tier                             Option        </span>  
+  🎮 <span class="b">Steam</span>                 1.0.0.87-3              Tier 3                           <span class="er">✕ Remove</span>        
+     <span class="m">Launcher for the Steam software distribution service · Games · multilib</span>                        
+<span class="zb">  🎨 <span class="b">GIMP</span>                  3.2.6-2                 Tier 3                           <span class="er">✕ Remove</span>        </span>
+<span class="zb">     <span class="m">High-end image creation and manipulation · Graphics · extra</span>                                    </span>
+  ✉  <span class="b">Thunderbird</span>           156.0-1                 Tier 3                           <span class="er">✕ Remove</span>        
+     <span class="m">Free and open source email, news and chat · Internet · extra</span>                                   
+<span class="zb">  🎵 <span class="b">VLC</span>                   3.0.23_2-16             Tier 3                           <span class="er">✕ Remove</span>        </span>
+<span class="zb">     <span class="m">The open-source multimedia player · Sound &amp; video · extra</span>                                      </span>
+  ▣  <span class="b">Alacritty</span>             0.17.0-1                Tier 2                           <span class="er">✕ Remove</span>        
+     <span class="m">A cross-platform, OpenGL terminal emulator · System · extra</span>                                    
+<span class="zb">  ⚙  <span class="d">linux-zen</span>             7.2.7.zen1-1            Tier 1                           <span class="d">🔒 Locked</span>       </span>
+<span class="zb">     <span class="m">The system needs this to start · core</span>                                                          </span>
+  📦 <span class="b">fresh-editor-bin</span>      0.5.1-1                 Tier 3                           <span class="er">✕ Remove</span>        
+     <span class="m">A terminal text editor · AUR</span>                                                                   
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">↑↓</span> <span class="d">pick</span>  ·  <span class="a">Del</span> <span class="d">remove</span>  ·  <span class="a">/</span> <span class="d">find</span>  ·  <span class="a">F1</span> <span class="d">help</span>  ·  <span class="a">?</span> <span class="d">all keys</span>                                       </span></pre></div>
+  <p class="cap">Only 29 of your 254 have a catalogue entry (Steam, GIMP, Thunderbird, VLC…): those get their proper name and the catalogue's description. The rest (tools, libraries, AUR) show their package name and pacman's description. linux-zen has no Remove: the lock says why ("the system needs this to start").</p>
+  <h3>On a plain text console</h3>
+  <p class="prose">The Linux text console's font has no emoji, so the badges become two letters in the badge's colour (<b>GA</b> games, <b>GR</b> graphics, <b>AV</b> sound and video, <b>OF</b> office, <b>NE</b> internet, <b>SY</b> system, <b>DE</b> development, <b>UT</b> utility, <b>--</b> everything else), and the lock becomes the word <b>locked</b>. Javier: <em>"icon in tty version may not be visible, contemplate that please."</em> Checked with forgekit's console preview before each beta, as for the other Forge apps.</p>
+  <div class="term con"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard  <span class="act"> Home </span>  Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp v <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="d">Show</span> <span class="fld"> Yours (254)      v </span>  <span class="d">Type</span> <span class="fld"> All types   v </span>  <span class="d">Find</span> <span class="fld">                  </span>                          
+                                                                                                    
+<span class="a b">     Name                  Version                 Tier                             Option        </span>  
+  <span class="ok">GA</span> <span class="b">Steam</span>                 1.0.0.87-3              Tier 3                           <span class="er">Remove</span>          
+     <span class="m">Launcher for the Steam software distribution service - Games - multilib</span>                        
+<span class="zb">  <span class="v">GR</span> <span class="b">GIMP</span>                  3.2.6-2                 Tier 3                           <span class="er">Remove</span>          </span>
+<span class="zb">     <span class="m">High-end image creation and manipulation - Graphics - extra</span>                                    </span>
+  <span class="a">NE</span> <span class="b">Thunderbird</span>           156.0-1                 Tier 3                           <span class="er">Remove</span>          
+     <span class="m">Free and open source email, news and chat - Internet - extra</span>                                   
+<span class="zb">  <span class="w">AV</span> <span class="b">VLC</span>                   3.0.23_2-16             Tier 3                           <span class="er">Remove</span>          </span>
+<span class="zb">     <span class="m">The open-source multimedia player - Sound &amp; video - extra</span>                                      </span>
+  <span class="d">SY</span> <span class="b">Alacritty</span>             0.17.0-1                Tier 2                           <span class="er">Remove</span>          
+     <span class="m">A cross-platform, OpenGL terminal emulator - System - extra</span>                                    
+<span class="zb">  <span class="d">SY</span> <span class="d">linux-zen</span>             7.2.7.zen1-1            Tier 1                           <span class="d">Locked</span>          </span>
+<span class="zb">     <span class="m">The system needs this to start - core</span>                                                          </span>
+  <span class="d">--</span> <span class="b">fresh-editor-bin</span>      0.5.1-1                 Tier 3                           <span class="er">Remove</span>          
+     <span class="m">A terminal text editor - AUR</span>                                                                   
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">Up/Down</span> <span class="d">pick</span>  ·  <span class="a">Del</span> <span class="d">remove</span>  ·  <span class="a">/</span> <span class="d">find</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                                 </span></pre></div>
+</section>
+
+<section id="search">
+  <h2>3 · Search</h2>
+  <p class="prose">Search with a type (Office, Games, Graphics, Internet, Development, System…), the same table as Home, with Install on the right. AUR results are marked AUR; what you already have says so.</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome  <span class="act"> Search </span>  <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="d">Find</span> <span class="fld"> photo                           </span>  <span class="d">Type</span> <span class="fld"> Graphics    ▾ </span>  <span class="fld"> ● Include AUR </span>                     
+                                                                                                    
+<span class="a b">     Name                  Version                 Tier                             Option        </span>  
+  🎨 <span class="b">Krita</span>                 6.0.4-2                 Tier 3                           <span class="ok">+ Install</span>       
+     <span class="m">Edit and paint images · Graphics · extra</span>                                                       
+<span class="zb">  🎨 <span class="b">darktable</span>             5.6.1-3                 Tier 3                           <span class="ok">+ Install</span>       </span>
+<span class="zb">     <span class="m">Organize and develop raw images · Graphics · extra</span>                                             </span>
+  🎨 <span class="b">RawTherapee</span>           5.13-1                  Tier 3                           <span class="ok">+ Install</span>       
+     <span class="m">A powerful raw image processing program · extra</span>                                                
+<span class="zb">  🎨 <span class="b">digiKam</span>               9.1.0-7                 Tier 3                           <span class="ok">+ Install</span>       </span>
+<span class="zb">     <span class="m">An advanced digital photo management application · extra</span>                                       </span>
+  🎨 <span class="d">GIMP</span>                  3.2.6-2                 Tier 3                           <span class="d">✓ Yours</span>         
+     <span class="m">High-end image creation and manipulation · installed</span>                                           
+<span class="zb">  📦 <span class="b">photoqt</span>               (example)               Tier 3                           <span class="ok">+ Install</span>       </span>
+<span class="zb">     <span class="m">An image viewer · AUR: built on this computer</span>                                                  </span>
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">type</span> <span class="d">to search</span>  ·  <span class="a">Enter</span> <span class="d">install</span>  ·  <span class="a">Tab</span> <span class="d">next</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                          </span></pre></div>
+</section>
+
+<section id="update">
+  <h2>4 · Update</h2>
+  <p class="prose">Not a log window: the plan as tables. <b>Ready now</b> is ticked; untick one and nog says what has to stay back with it. <b>Held</b> says when each is ready, with Promote. <b>Asks you</b> holds what nog can't date. Then a review, nog's real run, and what changed.</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch  <span class="act"> Update </span>  <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="btn"> Check for Updates (c) </span>  <span class="pri"> Update 61 Ticked (u) </span>   <span class="m">checked 2 min ago · every source ✓</span>              
+                                                                                                    
+  <span class="a b">Ready now (61)</span>  <span class="m">untick to keep one back: nog says what must stay back with it</span>                     
+<span class="a b">         Name              Version                           Tier     Source                      </span>  
+  [x] 🌐 firefox           143.0.1-1 → 143.0.2-1             Tier 2   extra                         
+<span class="zb">  [x] ⚙  tzdata            2026d-1 → 2026e-1                 Tier 3   core                          </span>
+  <span class="w">[ ]</span> ⚙  <span class="w">mesa</span>              26.2.3-1 → 26.2.4-1               Tier 1   extra                         
+       <span class="w">↳ keeping mesa back also keeps lib32-mesa and vulkan-radeon: they must match</span>                 
+<span class="zb">  [x] 🎵 vapoursynth       79-1 → 80-1                       Tier 3   extra                         </span>
+  <span class="d">… 57 more</span>                                                                                         
+                                                                                                    
+  <span class="a b">Held (13)</span>                                                                                         
+<span class="a b">         Name              Version                           Tier     Ready on      Option        </span>  
+      ⚙  linux-zen         7.2.7.zen1-1 → 7.2.8.zen1-2       Tier 1   Oct 31        <span class="a">↑ Promote</span>       
+<span class="zb">      ▣  grubforge         1.1.3-1 → 2.0.0-1                 Tier 2   Oct 17        <span class="a">↑ Promote</span>       </span>
+      ⚙  glibc             2.44+r24 → 2.44+r50               Tier 1   Oct 27        <span class="a">↑ Promote</span>       
+  <span class="d">… 10 more</span>                                                                                         
+                                                                                                    
+  <span class="a b">Asks you (1)</span>  <span class="m">nog can&#x27;t tell when this one was built</span>                                              
+      📦 libfoo            1.2-1 → 1.3-1 (example)           Tier 3   AUR           <span class="a">✓ Update</span> <span class="d">Hold</span>   
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">Space</span> <span class="d">tick</span>  ·  <span class="a">p</span> <span class="d">promote</span>  ·  <span class="a">u</span> <span class="d">update</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                                  </span></pre></div>
+  <h3>After the run</h3>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch  <span class="act"> Update </span>  <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+                                                                                                    
+                <span class="a">╭─ What changed ────────────────────────────────────────────────────╮</span>               
+                <span class="a">│</span>                                                                   <span class="a">│</span>               
+                <span class="a">│</span> <span class="ok b">✓ 60 updated</span>   <span class="w">1 kept back by you</span>  <span class="m">13 still held</span>                  <span class="a">│</span>               
+                <span class="a">│</span>                                                                   <span class="a">│</span>               
+                <span class="a">│</span> <span class="w b">Restart needed:</span> linux-zen is new; the running kernel is           <span class="a">│</span>               
+                <span class="a">│</span> still the old one until you restart.                              <span class="a">│</span>               
+                <span class="a">│</span>                                                                   <span class="a">│</span>               
+                <span class="a">│</span> <span class="m">Kept back: mesa (with lib32-mesa, vulkan-radeon)</span>                  <span class="a">│</span>               
+                <span class="a">│</span> <span class="m">Full record: History, and nog&#x27;s log</span>                               <span class="a">│</span>               
+                <span class="a">│</span>                                                                   <span class="a">│</span>               
+                <span class="a">│</span>                       <span class="dng"> Restart Now (r) </span> <span class="btn"> Later (l) </span>               <span class="a">│</span>               
+                <span class="a">╰───────────────────────────────────────────────────────────────────╯</span>               
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">Tab</span> <span class="d">buttons</span>  ·  <span class="a">Enter</span> <span class="d">choose</span>  ·  <span class="a">Esc</span> <span class="d">close</span>                                                         </span></pre></div>
+  <p class="cap">Only after a kernel update: a pop-up with <b>Restart Now (r)</b> in red, and <b>Later (l)</b> for people who want to keep working (Javier). Restart asks for the password first.</p>
+</section>
+
+<section id="tiers">
+  <h2>5 · Tiers</h2>
+  <p class="prose">Everything waiting, soonest first, with your dropdown: All tiers, Tier 1, Tier 2, Tier 3. Change a package's tier (<code>nog pin</code>) or promote it (<code>nog unlock --promote</code>).</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate  <span class="act"> Tiers </span>  Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="d">Show</span> <span class="fld"> All tiers  ▾ </span>  <span class="d">Find</span> <span class="fld">                </span>   <span class="m">Tier 1 waits 30 days · Tier 2 15 · Tier 3 7</span>          
+                                                                                                    
+<span class="a b">     Name                  Version                 Tier     Ready on                Option        </span>  
+  ⚙  <span class="b">tzdata</span>                2026d-1 → 2026e-1       Tier 3   Oct 7                   <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span>
+     <span class="m">waiting since Sep 30 · 7-day wait</span>                                                              
+<span class="zb">  ⚙  <span class="b">linux-lts</span>             6.18.29-1 → 6.18.54-2   Tier 1   Oct 8                   <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span></span>
+<span class="zb">     <span class="m">waiting since Jul 28 · wait over; its newest build must be 7 days old</span>                          </span>
+  🎵 <span class="b">vapoursynth</span>           79-1 → 80-1             Tier 3   Oct 8                   <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span>
+     <span class="m">waiting since Oct 1 · 7-day wait</span>                                                               
+<span class="zb">  ▣  <span class="b">grubforge</span>             1.1.3-1 → 2.0.0-1       Tier 2   Oct 17                  <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span></span>
+<span class="zb">     <span class="m">waiting since Oct 2 · pinned to Tier 2 by you</span>                                                  </span>
+  ⚙  <span class="b">glibc</span>                 2.44+r24 → 2.44+r50     Tier 1   Oct 27                  <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span>
+     <span class="m">waiting since Sep 27 · 30-day wait</span>                                                             
+<span class="zb">  ⚙  <span class="b">linux-zen</span>             7.2.7.zen1-1 → 7.2.8.zen1-2Tier 1   Oct 31               <span class="a">⇅ Tier</span> <span class="a">↑ Promote</span></span>
+<span class="zb">     <span class="m">waiting since Oct 1 · 30-day wait</span>                                                              </span>
+  <span class="d">… 68 more</span>                                                                                         
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">↑↓</span> <span class="d">pick</span>  ·  <span class="a">t</span> <span class="d">change tier</span>  ·  <span class="a">p</span> <span class="d">promote</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                                </span></pre></div>
+</section>
+
+<section id="settings">
+  <h2>6 · Settings</h2>
+  <p class="prose">Five groups: <b>Holds</b>, <b>Sources</b> (KognogOS channels, AUR, Flatpak, Snap on or off), <b>Repositories</b>, <b>Downloads</b> (pacman.conf's safe options: parallel downloads, colour, multilib), <b>Cleaning</b>. Every change reviewed and backed up, like grubForge.</p>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers  <span class="act"> Settings </span>  Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+ <span class="sel"> Holds         </span> <span class="d">│</span> <span class="v b">Holds</span>   <span class="d">how long a new version waits before it&#x27;s installed</span>                       
+  Sources         <span class="d">│</span>                                                                                 
+  Repositories    <span class="d">│</span> Tier 1 waits  <span class="fld"> 30 </span><span class="d"> days</span> <span class="btn"> 14 </span> <span class="pri"> 30 </span> <span class="btn"> 45 </span> <span class="btn"> 60 </span>                                     
+  Downloads       <span class="d">│</span>               <span class="d">kernel, bootloader, glibc, systemd</span>                                
+  Cleaning        <span class="d">│</span> Tier 2 waits  <span class="fld"> 15 </span><span class="d"> days</span> <span class="btn"> 7 </span> <span class="pri"> 15 </span> <span class="btn"> 30 </span>                                           
+                  <span class="d">│</span> Tier 3 waits  <span class="fld">  7 </span><span class="d"> days</span> <span class="btn"> 0 </span> <span class="btn"> 3 </span> <span class="pri"> 7 </span> <span class="btn"> 14 </span>                                        
+                  <span class="d">│</span>                                                                                 
+                  <span class="d">│</span> Tier 1 only   <span class="fld"> ( ) when the wait ends   (•) when I promote it </span>                  
+                  <span class="d">│</span> with my OK    <span class="d">expert mode: nothing in Tier 1 updates until you say</span>              
+                  <span class="d">│</span>                                                                                 
+                  <span class="d">│</span> <span class="m">Safety days: 7 / 3 / 1 — a version must also be this old</span>                        
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+<span class="bar"> <span class="pc">●</span> <span class="pc">1 change not saved yet</span>                                                <span class="pri"> Save (F10) </span> <span class="btn"> Discard (d) </span> </span>
+<span class="hdr"> <span class="a">↑↓</span> <span class="d">groups</span>  ·  <span class="a">Tab</span> <span class="d">settings</span>  ·  <span class="a">←→</span> <span class="d">presets</span>  ·  <span class="a">F10</span> <span class="d">save</span>                                             </span></pre></div>
+  <h3>Repositories</h3>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers  <span class="act"> Settings </span>  Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  Holds           <span class="d">│</span> <span class="v b">Repositories</span>   <span class="d">where packages come from: each one can install anything</span>          
+  Sources         <span class="d">│</span>                                                                                 
+ <span class="sel"> Repositories  </span> <span class="d">│</span> <span class="pri"> Add Repository (a) </span>                                                             
+  Downloads       <span class="d">│</span>                                                                                 
+  Cleaning        <span class="d">│</span> <span class="a b">Name          Signatures   Yours                 Option</span>                         
+                  <span class="d">│</span> core          Required     16                    <span class="d">🔒 Arch&#x27;s own</span>                  
+                  <span class="d">│</span> <span class="zb">extra         Required     203                   </span><span class="d">🔒 Arch&#x27;s own</span>                  
+                  <span class="d">│</span> multilib      Required     3                     <span class="a">⇅ Move</span> <span class="er">✕ Remove</span>                
+                  <span class="d">│</span> <span class="zb">chaotic-aur   Required     19                    </span><span class="a">⇅ Move</span> <span class="er">✕ Remove</span>                
+                  <span class="d">│</span>                                                                                 
+                  <span class="d">│</span> <span class="m">Order matters: the first one that has a package wins.</span>                           
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+                 <span class="d">│</span>                                                                                  
+<span class="bar"> <span class="pc">●</span> <span class="pc">nothing changed</span>                                                                     <span class="btn"> Save (F10) </span> </span>
+<span class="hdr"> <span class="a">↑↓</span> <span class="d">groups</span>  ·  <span class="a">Tab</span> <span class="d">settings</span>  ·  <span class="a">F10</span> <span class="d">save</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                                </span></pre></div>
+  <h3>Adding one</h3>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers  <span class="act"> Settings </span>  Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+           <span class="a">╭─ Add a repository ──────────────────────────────────────────────────────────╮</span>          
+           <span class="a">│</span>                                                                             <span class="a">│</span>          
+           <span class="a">│</span> Name        <span class="fld"> example-repo                     </span>                              <span class="a">│</span>          
+           <span class="a">│</span> Address     <span class="fld"> https://repo.example.org/$arch    </span>                             <span class="a">│</span>          
+           <span class="a">│</span> Signatures  <span class="fld"> (•) Required   ( ) Optional {er|(unsafe)</span>  }                    <span class="a">│</span>          
+           <span class="a">│</span>                                                                             <span class="a">│</span>          
+           <span class="a">│</span> <span class="w b">==&gt; Its signing key</span>                                                         <span class="a">│</span>          
+           <span class="a">│</span>     Example Repo Signing Key &lt;keys@example.org&gt;                             <span class="a">│</span>          
+           <span class="a">│</span>     <span class="b">ABCD 1234 EF56 7890 ABCD  1234 EF56 7890 ABCD 1234</span>                      <span class="a">│</span>          
+           <span class="a">│</span>     <span class="m">Check this matches what the repository&#x27;s own website shows.</span>             <span class="a">│</span>          
+           <span class="a">│</span>     <span class="m">Trusting it lets this repository install anything on this computer.</span>     <span class="a">│</span>          
+           <span class="a">│</span>                                                                             <span class="a">│</span>          
+           <span class="a">│</span>                       <span class="pri"> I Checked It: Add (a) </span> <span class="btn"> Cancel (esc) </span>                <span class="a">│</span>          
+           <span class="a">╰─────────────────────────────────────────────────────────────────────────────╯</span>          
+                                                                                                    
+  <span class="d">(example repository and key: a real one is shown from the key server)</span>                             
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">Tab</span> <span class="d">next</span>  ·  <span class="a">Enter</span> <span class="d">choose</span>  ·  <span class="a">Esc</span> <span class="d">cancel</span>                                                           </span></pre></div>
+  <p class="cap">A repository can install anything on your computer, which is why KognogOS's "Where We Stand" page exists. Signatures are required unless you pick "Optional", which is marked unsafe and asks twice.</p>
+</section>
+
+<section id="remove">
+  <h2>Removing</h2>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard  <span class="act"> Home </span>  Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings   Histor<span class="u">y</span>  <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+              <span class="a">╭─ Review before removing ──────────────────────────────────────────────╮</span>             
+              <span class="a">│</span>                                                                       <span class="a">│</span>             
+              <span class="a">│</span> <span class="b">Remove</span>  Steam  <span class="m">1.0.0.87-3 · 19.5 MB</span>                                   <span class="a">│</span>             
+              <span class="a">│</span>                                                                       <span class="a">│</span>             
+              <span class="a">│</span> <span class="fld"> [x] </span>  Also remove what only Steam needed <span class="m">(example: 3)</span>                <span class="a">│</span>             
+              <span class="a">│</span>         lib32-libxss, lib32-libnm, steam-native-runtime               <span class="a">│</span>             
+              <span class="a">│</span>                                                                       <span class="a">│</span>             
+              <span class="a">│</span> <span class="m">What happens</span>                                                          <span class="a">│</span>             
+              <span class="a">│</span>   1  The system asks for your password (its own window)               <span class="a">│</span>             
+              <span class="a">│</span>   2  nog removes them; nothing else is touched                        <span class="a">│</span>             
+              <span class="a">│</span>                                                                       <span class="a">│</span>             
+              <span class="a">│</span>                               <span class="pri"> Remove (r) </span> <span class="btn"> Cancel (esc) </span>             <span class="a">│</span>             
+              <span class="a">╰───────────────────────────────────────────────────────────────────────╯</span>             
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">Space</span> <span class="d">tick</span>  ·  <span class="a">Tab</span> <span class="d">buttons</span>  ·  <span class="a">Esc</span> <span class="d">cancel</span>                                                          </span></pre></div>
+  <p class="cap">"Also remove what only Steam needed" keeps orphans from piling up. Installs get the same review: what comes with it, and the download size.</p>
+</section>
+
+<section id="history">
+  <h2>7 · History</h2>
+  <div class="term"><pre><span class="hdr"> <span class="v b">nogForge 0.1.0</span><span class="m"> · packages, the KognogOS way</span>                        <span class="m">tphome-linux · nog 1.6.0 · beta</span> </span>
+<span class="bar">  <span class="u">D</span>ashboard   <span class="u">H</span>ome   Se<span class="u">a</span>rch   <span class="u">U</span>pdate   <span class="u">T</span>iers   Se<span class="u">t</span>tings  <span class="act"> History </span> <span class="u">H</span>elp ▾ <span class="u">Q</span>uit                      </span>
+                                                                                                    
+  <span class="btn"> Show the Packages (Enter) </span>  <span class="btn"> Open nog&#x27;s Log (o) </span>   <span class="m">from nog&#x27;s own logs</span>                           
+                                                                                                    
+<span class="a b">  When            What                              Packages  Result                              </span>  
+  Oct 3  00:04    Install bitlaforge                1         <span class="ok">✓ done</span>                                
+<span class="zb">  Oct 2  23:42    Install bitlaforge (test package) 1         <span class="ok">✓ done</span>                                </span>
+  Oct 2  22:49    Install alacrittyforge            1         <span class="ok">✓ done</span>                                
+<span class="zb">  Oct 2  16:52    Install grubforge                 1         <span class="ok">✓ done</span>                                </span>
+  Oct 2  13:00    Update                            74        <span class="ok">✓ 5 installed</span> · 69 held               
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+<span class="hdr"> <span class="a">↑↓</span> <span class="d">pick</span>  ·  <span class="a">Enter</span> <span class="d">details</span>  ·  <span class="a">F1</span> <span class="d">help</span>                                                              </span></pre></div>
+</section>
+
+<section id="password">
+  <h2>The password</h2>
+  <p class="prose">Like grubForge: when a change needs administrator rights, <b>the system's own password window</b> opens (on KognogOS, KDE's). nogForge only learns "allowed" or "cancelled". nog runs as you, because building AUR packages refuses to run as administrator; only its administrator steps ask. On a text console, with no window, the terminal asks instead.</p>
+</section>
+
+<section id="phases">
+  <h2>Beta phases</h2>
+  <ol class="prose">
+    <li><b>nog 1.6.0</b>: JSON, keep-back, the password window. Released and tested by you first.</li>
+    <li><b>nogForge 0.1</b>: Dashboard, Home, Search, install and remove, History.</li>
+    <li><b>0.2</b>: Update, the visual plan.</li>
+    <li><b>0.3</b>: Tiers.</li>
+    <li><b>0.4</b>: Settings, repositories included.</li>
+    <li><b>Later</b>: Flatpak and Snap installs (nog#7), then 1.0.</li>
+  </ol>
+  <p class="prose">Each phase: tests, every distribution nog runs on, your run with a written test matrix, then the beta release.</p>
+</section>
+
+<section id="questions">
+  <div class="decide">
+    <h3>Answered · Javier, 3 October</h3>
+    <ol>
+      <li><b>After a kernel update:</b> a pop-up, <b>Restart Now (r)</b> in red, or <b>Later (l)</b>: <em>"maybe they want to keep working, no reboot"</em>.</li>
+      <li><b>Home's default:</b> Yours (254), <em>"like the example"</em>.</li>
+      <li><b>Keys:</b> 1–7 for the screens, u, r, Del, / : <em>"ok"</em>.</li>
+      <li><b>Review Packages (r)</b> opens Search, <em>"to see the whole picture"</em>.</li>
+    </ol>
+    <p class="prose">The design is approved. Next: nog 1.6.0 (JSON, keep-back, the password window), then nogForge 0.1.</p>
+  </div>
+</section>
+
+</div>
