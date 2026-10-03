@@ -32,8 +32,10 @@ LOG_DIR = "~/.local/share/nogforge/logs"
 def summary(app) -> tuple[str, list[str], str]:
     done = [c for c in app.changes if c[2] == 0]
     stopped = [c for c in app.changes if c[2] != 0]
-    word = {"install": "Installed", "remove": "Removed", "update": "Updated", "clean": "Cleaned up"}
-    lines = [f"{word[a]} {n}".strip() + "." for a, n, _c in done]
+    word = {"install": "Installed", "remove": "Removed", "update": "Updated", "clean": "Cleaned up",
+            "promote": "Promoted", "pin": "Changed the tier of"}
+    # an action without its own word still gets a line, never a crash at the very end
+    lines = [f"{word.get(a, a.capitalize())} {n}".strip() + "." for a, n, _c in done]
     lines += [f"{a.capitalize()} {n}: nog stopped (status {c}).".replace("  ", " ") for a, n, c in stopped]
     if not app.changes:
         return "nogForge · Nothing changed", ["Looked around; nothing was installed or removed."], "ok"
