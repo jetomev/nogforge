@@ -15,5 +15,5 @@
 ## Next
 - [x] Project kit (3 Oct): `CLAUDE.md` (the decided rules), this TODO, GitHub topics completed (forge-suite, linux, aur-package, ai-collaboration, human-ai), Vault folder. Phase issues open with the design. Old stub code (`nogforge/managers/base.py`, never wired) is replaced by the build.
 - [ ] **Ask Javier:** old commit message `f16c086` (30 Jul) says "Balih" in this public repo; removing it means rewriting history (force-push). His call.
-- [ ] Research: what nog does today (tiers, holds, queue, updates, logs) and what a screen for it should show; forgekit 0.5.0 as the base
-- [ ] Design: screen-by-screen plan for Javier's approval before any code, the grubForge 2.0 method
+- [x] Research (3 Oct): nog 1.5.8 commands; 1,518 installed / 254 chosen / 24 AUR; only 29 of the 254 in Arch's app catalogue (`archlinux-appstream-data`, English names must be picked from the translations); 74 updates in nog's hold record; cache 9.7 GB; Flatpak 2, Snap 4.
+- [ ] **Design page drawn (3 Oct, ~00:55), waiting on Javier's answers**: https://claude.ai/artifact/Qvj5SXyADUqjV3EpKfjn4G — 11 drawings at 100 columns from this desktop's real data (Dashboard, Home + its text-console version, Search, Update + What changed, Tiers, Settings Holds/Repositories/Add, Removing, History). Console badges are two letters (GA, GR, AV…), the lock is the word "locked" (Javier: "icon in tty version may not be visible"). Open questions: restart offer after a kernel update; Home default (Yours 254 vs apps 29); keys 1–7/U/Del//; anything missing.
