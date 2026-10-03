@@ -24,6 +24,7 @@ class Run:
     command: str
     status: str
     outcome: str
+    user: str = ""
 
     @property
     def what(self) -> str:
@@ -52,7 +53,8 @@ def runs(folder: Path = LOGS, limit: int = 200) -> list[Run]:
                         when = datetime.strptime(f"{r['date']} {r['time']}", "%m/%d/%Y %I:%M %p")
                     except (KeyError, ValueError, TypeError):
                         continue
-                    out.append(Run(when, r.get("command") or "", r.get("status") or "", r.get("outcome") or ""))
+                    out.append(Run(when, r.get("command") or "", r.get("status") or "", r.get("outcome") or "",
+                                   r.get("user") or ""))
         except OSError:
             continue
     out.sort(key=lambda r: r.when, reverse=True)
@@ -78,3 +80,57 @@ def size_words(n: float) -> str:
             return f"{n:.0f} {unit}" if unit in ("B", "KB") else f"{n:.1f} {unit}"
         n /= 1024
     return f"{n:.1f} TB"
+
+
+@dataclass
+class Detail:
+    """One of nog's other logs for a run (nog-update.csv, nog-reboot.csv…): its lines."""
+    kind: str
+    path: str
+    header: list[str]
+    rows: list[list[str]]
+
+    def table(self, cs: dict):
+        from rich.table import Table
+        shade = cs.get("forge-surface")
+        t = Table(box=None, padding=(0, 1, 0, 0), header_style=f"bold {cs.get('forge-accent', '')}",
+                  row_styles=["", f"on {shade}"] if shade else None)
+        keep = [i for i, h in enumerate(self.header) if h not in ("date", "user")]
+        for i in keep:
+            t.add_column(self.header[i].replace("_", " ").capitalize(), no_wrap=True, overflow="ellipsis",
+                         max_width=24 if self.header[i] in ("note", "detail") else None)
+        for r in self.rows:
+            t.add_row(*[r[i] if i < len(r) else "" for i in keep])
+        return t
+
+
+def details_for(run: Run, folder: Path = LOGS) -> list[Detail]:
+    """nog's other logs for one run. nog writes the run's line when it ENDS
+    (an update at 13:00) and its package lines as they happen (12:43), so a
+    run's details are that day's lines after the previous run's end and up to
+    this one's."""
+    day = run.when.strftime("%Y%m%d")
+    earlier = [r.when for r in runs(folder, limit=10_000) if r.when.date() == run.when.date() and r.when < run.when]
+    since = max(earlier) if earlier else None
+    out = []
+    for f in sorted(folder.glob(f"{day} nog-*.csv")):
+        if f.name.endswith("nog-runs.csv"):
+            continue
+        try:
+            with f.open(newline="") as fh:
+                reader = csv.reader(fh)
+                header = next(reader, [])
+                lines = []
+                for r in reader:
+                    try:
+                        when = datetime.strptime(f"{r[0]} {r[1]}", "%m/%d/%Y %I:%M %p")
+                    except (IndexError, ValueError):
+                        continue
+                    if when <= run.when and (since is None or when > since):
+                        lines.append(r)
+        except OSError:
+            continue
+        if lines:
+            kind = f.name.split(" ", 1)[1].removesuffix(".csv").replace("nog-", "").capitalize()
+            out.append(Detail(f"{kind} log", str(f).replace(str(Path.home()), "~"), header, lines))
+    return out

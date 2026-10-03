@@ -29,7 +29,9 @@ from forgekit import (
 from . import __version__, catalogue, nog, records
 from .nog import NogError, Package
 from .ui.packages import PackageList
-from .ui.screens import DashboardScreen, HistoryScreen, HomeScreen, SearchScreen, TiersScreen, UpdateScreen
+from .ui.screens import (
+    ActivityScreen, DashboardScreen, FilterBar, InstallScreen, InSystemScreen, NogLogsScreen, UpdateScreen,
+)
 
 MANUAL_DIR = os.path.join(os.path.dirname(__file__), "manual")
 
@@ -39,67 +41,31 @@ NF_CSS = FORGE_CSS + """
 .nf-box { height: auto; border: round $forge-border; border-title-color: $forge-accent; border-title-style: bold; padding: 0 1; }
 .nf-box-buttons { height: auto; padding: 1 0 0 0; align-horizontal: left; }
 .nf-box-buttons Button { margin: 0; width: auto; min-width: 0; padding: 0 2; }
-.nf-bar { height: 3; margin: 0 0 1 0; }
+.nf-filters { height: auto; }
+.nf-bar { height: 3; margin: 0 0 0 0; }
 .nf-label { width: auto; height: 3; content-align: left middle; color: $forge-muted; padding: 0 1 0 1; }
-#hm-show { width: 26; } #hm-type { width: 20; } #hm-find { width: 1fr; }
-#tr-show { width: 18; } #tr-find { width: 1fr; }
-#sr-find { width: 1fr; } #sr-type { width: 20; } #sr-aur { width: auto; height: 3; content-align: left middle; margin: 0 0 0 1; }
-PackageHeader { height: 1; padding: 0 1; color: $forge-accent; }
-PackageList { height: 1fr; border: solid $forge-field-border; background: $forge-bg; padding: 0; }
-PackageList:focus { border: solid $forge-accent; }
+.nf-inline { width: auto; height: 3; align-vertical: middle; padding: 0 0 0 1; }
+.nf-inline Button { margin: 0; min-width: 0; width: auto; padding: 0 2; }
+#is-find, #in-find { width: 1fr; }
+#is-show { width: 22; } #is-type, #in-type { width: 20; } #is-tier, #in-tier { width: 17; }
+PackageHeader, .nf-head { height: 1; padding: 0 1; color: $forge-accent; margin: 1 0 0 0; }
+PackageList, RecordList { height: 1fr; border: solid $forge-field-border; background: $forge-bg; padding: 0; }
+PackageList:focus, RecordList:focus { border: solid $forge-accent; }
+PackageList > .option-list--option-highlighted, RecordList > .option-list--option-highlighted {
+    background: $forge-selected-bg; }
+PackageList:focus > .option-list--option-highlighted, RecordList:focus > .option-list--option-highlighted {
+    background: $forge-selected-bg; text-style: bold; }
 .nf-count { height: 1; padding: 0 1; }
-#sec-home, #sec-search { padding: 0 2 0 0; }
-#sec-update { padding: 0 2 0 0; }
+#sec-insystem, #sec-install, #sec-update, #sec-activity, #sec-noglogs { padding: 0 2 0 0; }
 #sec-update PackageList { height: auto; max-height: 14; }
 .nf-top { height: auto; padding: 0 0 1 0; align-horizontal: left; }
 .nf-top Button { margin: 0 2 0 0; }
 .nf-section { height: auto; margin: 1 0 0 0; }
 #up-summary { height: auto; }
-#sec-history { padding: 0 2 0 0; }
+.nf-log-panel { width: 96; height: auto; max-height: 90%; }
+#nl-body { height: auto; max-height: 70vh; }
 #nf-changed-msg { height: auto; padding: 0 0 1 0; }
 """
-
-class TierDialog(ForgeModal[str | None]):
-    """A package's tier, or promote it now. Returns "1"/"2"/"3", "promote" or None."""
-
-    def __init__(self, p: Package, holds: dict) -> None:
-        super().__init__()
-        self.p, self.holds = p, holds
-
-    def compose(self):
-        from forgekit import Choices
-        d = lambda t: self.holds.get(f"tier{t}_days", {1: 30, 2: 15, 3: 7}[t])
-        with Vertical(classes="forge-panel"):
-            yield Static(f"{self.p.name}: tier, or promote", classes="forge-panel-title")
-            yield Static(f"[$forge-muted]Its tier decides how long a new version waits before it installs. "
-                         f"Now: Tier {self.p.tier}.[/]")
-            yield Choices([("1", f"Tier 1 · {d(1)} days"), ("2", f"Tier 2 · {d(2)} days"),
-                           ("3", f"Tier 3 · {d(3)} days")], str(self.p.tier), id="td-tier")
-            yield Static("[$forge-muted]Tier 1 is for what the system needs to start (kernel, bootloader). "
-                         "The change is saved by nog in /etc/nog/tier-pins.toml (it asks for your password).[/]")
-            with Horizontal(classes="forge-buttons forge-panel-footer"):
-                yield Button("Change Tier (t)", id="td-pin", variant="primary")
-                yield Button("Promote Now (p)", id="td-promote")
-                yield Button("Cancel", id="td-cancel")
-
-    def on_mount(self) -> None:
-        self.query_one("#td-tier").focus()
-
-    def on_key(self, e) -> None:
-        if e.key == "escape":
-            e.stop()
-            self.dismiss(None)
-        elif e.key == "t":
-            e.stop()
-            self.dismiss(self.query_one("#td-tier").value)
-        elif e.key == "p":
-            e.stop()
-            self.dismiss("promote")
-
-    def on_button_pressed(self, e: Button.Pressed) -> None:
-        e.stop()
-        self.dismiss({"td-pin": self.query_one("#td-tier").value, "td-promote": "promote"}.get(e.button.id))
-
 
 KERNELS = ("linux", "linux-zen", "linux-lts", "linux-hardened", "linux-rt", "linux-rt-lts")
 
@@ -171,24 +137,26 @@ class NogForgeApp(ForgeApp):
     LICENSE_NOTICE = GPL3_NOTICE
     MENU = [
         {"id": "dashboard", "title": "Dashboard", "kind": "section"},
-        {"id": "home", "title": "Home", "kind": "section", "acc": "o"},
-        {"id": "search", "title": "Search", "kind": "section", "acc": "a"},
+        {"id": "insystem", "title": "In-System", "kind": "section"},
+        {"id": "install", "title": "Install", "kind": "section", "acc": "n"},
         {"id": "update", "title": "Update", "kind": "section"},
-        {"id": "tiers", "title": "Tiers", "kind": "section"},
-        {"id": "history", "title": "History", "kind": "section", "acc": "y"},
+        {"id": "history", "title": "History", "kind": "menu", "acc": "y", "items": [
+            ("Activity", "a", "show-activity"), ("nog Logs", "l", "show-noglogs")]},
         {"id": "help", "title": "Help", "kind": "menu", "items": [
             ("Manual", "m", "manual"), ("Keys", "k", "shortcuts"),
             ("License", "l", "license"), ("About", "a", "about")]},
         {"id": "quit", "title": "Quit", "kind": "action", "action": "quit"},
     ]
     SHORTCUTS = [
-        ("1-6, Ctrl+letter", "Dashboard, Home, Search, Update, Tiers, History"),
-        ("u", "review updates"),
-        ("r", "review packages (Search)"),
-        ("h", "open History"),
-        ("Enter", "the row's option: install or remove"),
-        ("Del", "remove the selected package (Home)"),
-        ("/", "find"),
+        ("1-6, Ctrl+letter", "Dashboard, In-System, Install, Update, Activity, nog Logs"),
+        ("u", "open Update · on Update: update the ticked ones"),
+        ("r", "review packages (Install)"),
+        ("h", "open History (Activity)"),
+        ("Enter", "the row's option: install, remove, promote; on nog Logs: open the log"),
+        ("Space", "tick or untick an update"),
+        ("Del", "remove the selected package (In-System)"),
+        ("/", "search"),
+        ("p", "repositories (In-System, Install)"),
         ("Esc", "leave a field, close a window"),
         ("F1", "help on this screen"),
         ("?", "this list"),
@@ -196,15 +164,14 @@ class NogForgeApp(ForgeApp):
     ]
     HINTS = [("u", "updates"), ("r", "packages"), ("1-6", "screens"), ("F1", "help"), ("?", "all keys")]
     BINDINGS = [
-        Binding("1", "go('dashboard')", show=False), Binding("2", "go('home')", show=False),
-        Binding("3", "go('search')", show=False), Binding("4", "go('update')", show=False),
-        Binding("5", "go('tiers')", show=False), Binding("6", "go('history')", show=False),
-        Binding("ctrl+t", "go('tiers')", show=False),
-        Binding("ctrl+d", "go('dashboard')", show=False), Binding("ctrl+o", "go('home')", show=False),
-        Binding("ctrl+a", "go('search')", show=False), Binding("ctrl+u", "go('update')", show=False),
-        Binding("ctrl+y", "go('history')", show=False),
-        Binding("u", "updates", show=False), Binding("r", "go('search')", show=False),
-        Binding("h", "go('history')", show=False), Binding("c", "check_or_clean", show=False),
+        Binding("1", "go('dashboard')", show=False), Binding("2", "go('insystem')", show=False),
+        Binding("3", "go('install')", show=False), Binding("4", "go('update')", show=False),
+        Binding("5", "go('activity')", show=False), Binding("6", "go('noglogs')", show=False),
+        Binding("ctrl+d", "go('dashboard')", show=False), Binding("ctrl+i", "go('insystem')", show=False),
+        Binding("ctrl+n", "go('install')", show=False), Binding("ctrl+u", "go('update')", show=False),
+        Binding("u", "updates", show=False), Binding("r", "go('install')", show=False),
+        Binding("h", "go('activity')", show=False), Binding("c", "check_or_clean", show=False),
+        Binding("p", "repositories", show=False),
         Binding("slash", "find", show=False),
         Binding("f1", "help_here", show=False, priority=True),
         Binding("question_mark", "act('shortcuts')", show=False),
@@ -225,7 +192,8 @@ class NogForgeApp(ForgeApp):
         self.snaps: int | None = None
         self.changes: list[tuple[str, str, int]] = []      # (action, names, exit code), for the closing note
         self.keep: set[str] = set()          # what you unticked on Update
-        self.keep_plan: dict | None = None   # nog's plan with those kept back: what must stay with them
+        self.promote: set[str] = set()       # what you promoted: ready now, with the ticked ones
+        self.keep_plan: dict | None = None   # nog's plan with your choices: what must move or stay with them
         self.keep_busy = False
         self.started = __import__("datetime").datetime.now()
         self.ABOUT = {
@@ -241,11 +209,11 @@ class NogForgeApp(ForgeApp):
 
     def compose_sections(self) -> ComposeResult:
         yield DashboardScreen(id="sec-dashboard")
-        yield HomeScreen(id="sec-home")
-        yield SearchScreen(id="sec-search")
+        yield InSystemScreen(id="sec-insystem")
+        yield InstallScreen(id="sec-install")
         yield UpdateScreen(id="sec-update")
-        yield TiersScreen(id="sec-tiers")
-        yield HistoryScreen(id="sec-history")
+        yield ActivityScreen(id="sec-activity")
+        yield NogLogsScreen(id="sec-noglogs")
 
     def on_mount(self) -> None:
         super().on_mount()
@@ -297,69 +265,90 @@ class NogForgeApp(ForgeApp):
             res, err = nog.search(query), ""
         except NogError as e:
             res, err = [], str(e)
-        self.call_from_thread(self.query_one(SearchScreen).show_results, res, err)
+        self.call_from_thread(self.query_one(InstallScreen).show_results, res, err)
 
-    # ── Update's choices: nog decides what must stay together ───────────────
+    # ── Update's choices: nog decides what must move or stay together ───────
+    def choice_plan(self) -> dict | None:
+        """The plan as it is with your choices (nog's answer), or nog's plain plan."""
+        if (self.keep or self.promote) and self.keep_plan is not None:
+            return self.keep_plan
+        return self.plan
+
+    def kept_partners(self) -> set[str]:
+        """What nog holds because of what you kept back (not their own wait)."""
+        held = (self.keep_plan or {}).get("held", []) if (self.keep or self.promote) else []
+        by = {r["name"]: r.get("coupled_to") for r in held}
+
+        def root(n, seen=()):
+            p = by.get(n)
+            if not p or n in seen:
+                return None
+            return p if p in self.keep else root(p, seen + (n,))
+        return {n for n in by if root(n)}
+
+    def root_of(self, name: str) -> str | None:
+        held = {r["name"]: r.get("coupled_to") for r in (self.keep_plan or {}).get("held", [])}
+        n, seen = name, set()
+        while held.get(n) and n not in seen:
+            seen.add(n)
+            n = held[n]
+            if n in self.keep:
+                return n
+        return None
+
     def toggle_keep(self, name: str) -> None:
-        """Untick (keep back) or tick again. Ticking one that only stays back
-        because of another ticks that other one again."""
-        forced = self.forced_partner(name)
-        if name in self.keep:
+        """Space on a ready row: keep it back, or tick it again. A promoted one
+        unticked goes back to waiting; one that only stays back because of
+        another ticks that other one again."""
+        if name in self.promote:
+            self.promote.discard(name)
+        elif name in self.keep:
             self.keep.discard(name)
-        elif forced:
-            self.keep.discard(forced)
-        else:
-            self.keep.add(name)
-        self.keep_plan = None
-        self.keep_busy = bool(self.keep)
+        elif (root := self.root_of(name)):
+            self.keep.discard(root)
+        elif any(r["name"] == name for r in (self.choice_plan() or {}).get("ready", [])):
+            ready_note = next(r.get("note", "") for r in self.choice_plan()["ready"] if r["name"] == name)
+            if ready_note.startswith("promoted with "):
+                self.promote.discard(ready_note.removeprefix("promoted with "))
+            else:
+                self.keep.add(name)
+        self.reload_choices()
+
+    def promote_package(self, name: str) -> None:
+        """Promote: ready now, it goes in with the ticked ones (Javier: "shouldn't
+        promote just bring the package to due, so it enters the ready list?")."""
+        self.promote.add(name)
+        self.keep.discard(name)
+        self.reload_choices()
+        self.notify(f"{name} is ready now; it goes in with the ticked ones. Space unticks it again.",
+                    title="Promoted", timeout=6)
+
+    def reload_choices(self) -> None:
+        self.keep_busy = bool(self.keep or self.promote)
+        if not self.keep_busy:
+            self.keep_plan = None
         self.refresh_screens()
-        if self.keep:
-            self.load_keep_plan(sorted(self.keep))
+        if self.keep_busy:
+            self.load_keep_plan(sorted(self.keep), sorted(self.promote))
 
     @work(thread=True, exclusive=True, group="nf-keep")
-    def load_keep_plan(self, keep: list[str]) -> None:
+    def load_keep_plan(self, keep: list[str], promote: list[str]) -> None:
         try:
-            p, err = nog.plan(keep), ""
+            p, err = nog.plan(keep, promote), ""
         except NogError as e:
             p, err = None, str(e)
-        self.call_from_thread(self._keep_done, keep, p, err)
+        self.call_from_thread(self._keep_done, keep, promote, p, err)
 
-    def _keep_done(self, keep: list[str], plan, err: str) -> None:
-        if sorted(self.keep) != keep:
-            return                              # the ticks changed meanwhile; a newer answer is coming
+    def _keep_done(self, keep: list[str], promote: list[str], plan, err: str) -> None:
+        if (sorted(self.keep), sorted(self.promote)) != (keep, promote):
+            return                              # the choices changed meanwhile; a newer answer is coming
         self.keep_plan, self.keep_busy = plan, False
         if err:
             self.notify(err, title="nog couldn't answer", severity="warning", timeout=8)
         self.refresh_screens()
 
-    def must_stay_back(self) -> dict[str, str]:
-        """Packages nog holds because of what you unticked: name → nog's reason."""
-        out = {}
-        for r in (self.keep_plan or {}).get("held", []):
-            partner = r.get("coupled_to")
-            if partner and (partner in self.keep or partner in out):
-                out[r["name"]] = f"must stay back with {partner}"
-        return out
-
-    def forced_partner(self, name: str) -> str | None:
-        for r in (self.keep_plan or {}).get("held", []):
-            if r["name"] == name and r.get("coupled_to"):
-                p = r["coupled_to"]
-                while self.forced_partner_of(p):          # a chain ends at what you unticked
-                    p = self.forced_partner_of(p)
-                return p
-        return None
-
-    def forced_partner_of(self, name: str) -> str | None:
-        if name in self.keep:
-            return None
-        for r in (self.keep_plan or {}).get("held", []):
-            if r["name"] == name and r.get("coupled_to"):
-                return r["coupled_to"]
-        return None
-
     def refresh_screens(self) -> None:
-        for cls in (DashboardScreen, HomeScreen, UpdateScreen, TiersScreen, HistoryScreen):
+        for cls in (DashboardScreen, InSystemScreen, UpdateScreen, ActivityScreen, NogLogsScreen):
             try:
                 self.query_one(cls).refresh_view()
             except NoMatches:
@@ -370,17 +359,18 @@ class NogForgeApp(ForgeApp):
         self._switch_section(section)
 
     def on_section_shown(self, section_id: str) -> None:
-        focus = {"home": "#hm-list", "search": "#sr-find", "update": "#up-ready", "tiers": "#tr-list"}.get(section_id)
+        focus = {"insystem": "#is-list", "install": "#in-find", "update": "#up-ready", "activity": "#ac-list",
+                 "noglogs": "#nl-list"}.get(section_id)
         if focus:
             self.query_one(focus).focus()
 
     def action_find(self) -> None:
         cur = self.query_one("#forge-work").current
-        if cur == "sec-home":
-            self.query_one("#hm-find").focus()
+        if cur == "sec-insystem":
+            self.query_one("#is-find").focus()
         else:
-            self._switch_section("search")
-            self.query_one("#sr-find").focus()
+            self._switch_section("install")
+            self.query_one("#in-find").focus()
 
     def action_check_or_clean(self) -> None:
         if self.query_one("#forge-work").current == "sec-update":
@@ -397,7 +387,7 @@ class NogForgeApp(ForgeApp):
             self._switch_section("update")
 
     def check_updates(self) -> None:
-        self.keep, self.keep_plan, self.keep_busy = set(), None, False      # a fresh plan, fresh choices
+        self.keep, self.promote, self.keep_plan, self.keep_busy = set(), set(), None, False   # fresh choices
         self.plan, self.plan_error = None, ""
         self.refresh_screens()
         self.load_plan()
@@ -405,6 +395,21 @@ class NogForgeApp(ForgeApp):
     def on_action(self, action_id: str) -> None:
         if action_id == "manual":
             self.open_manual()
+        elif action_id == "show-activity":
+            self._switch_section("activity")
+        elif action_id == "show-noglogs":
+            self._switch_section("noglogs")
+
+    def _mark_active(self, section_id: str) -> None:
+        """History is a menu of two screens: it's lit for both."""
+        for m in self.MENU:
+            on = m["id"] == section_id or (m["id"] == "history" and section_id in ("activity", "noglogs"))
+            self.query_one(f"#menu-{m['id']}").set_class(on, "active")
+
+    def action_repositories(self) -> None:
+        cur = self.query_one("#forge-work").current
+        if cur in ("sec-insystem", "sec-install"):
+            self.query_one(f"#{cur} FilterBar", FilterBar).choose_repositories()
 
     def open_manual(self, page: str | None = None) -> None:
         pages = load_pages(MANUAL_DIR) if os.path.isdir(MANUAL_DIR) else []
@@ -413,16 +418,16 @@ class NogForgeApp(ForgeApp):
 
     def action_help_here(self) -> None:
         cur = self.query_one("#forge-work").current.removeprefix("sec-")
-        self.open_manual(cur)
+        self.open_manual({"activity": "history", "noglogs": "history"}.get(cur, cur))
 
     def on_button_pressed(self, e: Button.Pressed) -> None:
         bid = e.button.id or ""
         if bid == "db-review-updates":
             self._switch_section("update")
         elif bid == "db-review-packages":
-            self._switch_section("search")
+            self._switch_section("install")
         elif bid == "db-history":
-            self._switch_section("history")
+            self._switch_section("activity")
         elif bid == "db-clean":
             self.hand_off("clean", [])
         elif bid == "up-check":
@@ -433,11 +438,8 @@ class NogForgeApp(ForgeApp):
     # ── changes: reviewed here, then nog runs them in the terminal ───────────
     def on_package_list_act(self, e: PackageList.Act) -> None:
         p = e.row.package
-        if "Tier" in e.row.option:
-            self.choose_tier(p)
-            return
         if e.row.option.endswith("Promote"):
-            self.review_promote(p)
+            self.promote_package(p.name)
             return
         if e.row.option_role == "muted":
             if p.protected:
@@ -466,42 +468,17 @@ class NogForgeApp(ForgeApp):
             return
         self.hand_off("remove" if removing else "install", [p.name])
 
-    @work(exclusive=True, group="nf-change")
-    async def review_promote(self, p: Package) -> None:
-        _cmd, env = nog.change_command("unlock", [p.name, "--promote"])
-        choice = await self.push_screen_wait(ReviewDialog(
-            "Review before promoting", [ChangeGroup("Promote", "", [(p.name, "held", f"{p.version} now")])],
-            steps=[f"nog installs {p.name} now, before its wait ends: the one thing the wait protects you from "
-                   "is a version that turns out to be broken",
-                   "nog runs in this terminal and pacman asks first", nog.describe_password(env),
-                   "Then you come back here"],
-            buttons=[("Promote (p)", "go", True)]))
-        if choice is not None:
-            self.hand_off("promote", [p.name])
-
-    @work(exclusive=True, group="nf-change")
-    async def choose_tier(self, p: Package) -> None:
-        holds = (self.plan or {}).get("holds", {})
-        choice = await self.push_screen_wait(TierDialog(p, holds))
-        if choice is None:
-            return
-        if choice == "promote":
-            self.review_promote(p)
-        elif choice != str(p.tier):
-            self.hand_off("pin", [p.name, "--tier", choice])
-
     def update_ticked(self) -> None:
-        names = sorted(self.keep)
-        self.hand_off("update", ["--keep", ",".join(names)] if names else [])
+        args = (["--keep", ",".join(sorted(self.keep))] if self.keep else []) + \
+            (["--promote", ",".join(sorted(self.promote))] if self.promote else [])
+        self.hand_off("update", args)
 
     def hand_off(self, action: str, names: list[str]) -> None:
         """Give the terminal to nog for a change, then come back and read everything again."""
-        verb = "unlock" if action == "promote" else action
-        args = [names[0], "--promote"] if action == "promote" else names
-        cmd, env = nog.change_command(verb, args)
+        cmd, env = nog.change_command(action, names)
         before = {p.name: p.version for p in self.packages}
         expected = self._expected(action, names)
-        kept = sorted(set(self.keep) | set(self.must_stay_back())) if action == "update" else []
+        kept = sorted(set(self.keep) | self.kept_partners()) if action == "update" else []
         code = self.run_in_terminal(cmd, env)
         shown = "" if action == "update" else " ".join(names)
         self.changes.append((action, shown, code))
@@ -513,23 +490,19 @@ class NogForgeApp(ForgeApp):
             self.notify(f"nog stopped (status {code}): declined, or something went wrong — nog's own words are "
                         f"in the terminal above, and in History.", title="Not done", severity="warning", timeout=12)
         self.load_local()
-        if action in ("update", "promote"):
-            self.keep, self.keep_plan = set(), None
+        if action == "update":
+            self.keep, self.promote, self.keep_plan = set(), set(), None
             self.show_what_changed(code, before, expected, kept)
-        query = self.query_one("#sr-find").value.strip()
+        query = self.query_one("#in-find").value.strip()
         if query and action in ("install", "remove"):
             self.run_search(query)               # the row turns into "Yours" (or back)
-        if action in ("update", "install", "remove", "pin", "promote"):
+        if action in ("update", "install", "remove"):
             self.check_updates()
 
     def _expected(self, action: str, names: list[str]) -> dict[str, str]:
         """What should change: name → new version, from nog's plan."""
-        plan = self.plan or {}
-        if action == "promote":
-            return {r["name"]: r["new"] for r in plan.get("held", []) if r["name"] == names[0]}
         if action == "update":
-            stay = set(self.keep) | set(self.must_stay_back())
-            return {r["name"]: r["new"] for r in plan.get("ready", []) if r["name"] not in stay}
+            return {r["name"]: r["new"] for r in (self.choice_plan() or {}).get("ready", [])}
         return {}
 
     def show_what_changed(self, code: int, before: dict[str, str], expected: dict[str, str],

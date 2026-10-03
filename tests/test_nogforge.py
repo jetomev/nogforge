@@ -204,16 +204,32 @@ class Rows(StandIn):
         self.assertEqual(search_row(Package("krita", "6", installed=False)).option_role, "ok")
         self.assertEqual(search_row(Package("gimp", "3", installed=True)).option_role, "muted")
 
+    def test_search_ranks_the_name_first_and_drops_what_only_pacman_matched(self):
+        from nogforge.ui.packages import relevant
+        ps = [Package("abv-calc-git", "1", "ABV Calculator", source="aur"), Package("calc", "2", "Arbitrary precision",
+              source="extra"), Package("perl", "5", "A programming language", source="core"),
+              Package("calcurse", "4", "organizer", source="extra"), Package("kcalc", "3", "Scientific calculator",
+              source="extra"), Package("bc", "1", "An arbitrary precision calculator language", source="extra")]
+        self.assertEqual([p.name for p in relevant(ps, "calc", {})],
+                         ["calc", "calcurse", "kcalc", "abv-calc-git", "bc"],
+                         "exact, starts with, contains (repositories before the AUR), then descriptions; no perl")
+
     def test_show_type_find(self):
         pk = nog.installed()
         names = lambda ps: [p.name for p in ps]
         self.assertEqual(names(filtered(pk, "yours", "All types", "", self.apps)),
                          ["steam", "gimp", "linux-zen", "fresh-editor-bin"])
         self.assertEqual(names(filtered(pk, "all", "All types", "", self.apps))[-1], "libfoo")
-        self.assertEqual(names(filtered(pk, "aur", "All types", "", self.apps)), ["fresh-editor-bin"])
+        self.assertEqual(names(filtered(pk, "all", "All types", "", self.apps, repos={"aur"})), ["fresh-editor-bin"])
+        self.assertEqual(names(filtered(pk, "all", "All types", "", self.apps, tier="1")), ["linux-zen", "glibc"])
         self.assertEqual(names(filtered(pk, "yours", "Graphics", "", self.apps)), ["gimp"])
         self.assertEqual(names(filtered(pk, "all", "All types", "manipulation", self.apps)), ["gimp"],
                          "Find matches descriptions, the catalogue's included")
+
+
+def pick(pl, name):
+    """Highlight a row by its package's name (never by position: rows get sorted)."""
+    pl.highlighted = [r.package.name for r in pl.rows].index(name)
 
 
 class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
@@ -259,8 +275,8 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.5)
             await pilot.press("2")
             await pilot.pause(0.3)
-            pl = app.query_one("#hm-list")
-            pl.highlighted = [r.package.name for r in pl.rows].index("linux-zen")
+            pl = app.query_one("#is-list")
+            pick(pl, "linux-zen")
             await pilot.press("delete")
             await pilot.pause(0.4)
             self.assertNotEqual(type(app.screen).__name__, "ReviewDialog")
@@ -272,8 +288,8 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.5)
             await pilot.press("2")
             await pilot.pause(0.3)
-            pl = app.query_one("#hm-list")
-            pl.highlighted = [r.package.name for r in pl.rows].index("steam")
+            pl = app.query_one("#is-list")
+            pick(pl, "steam")
             await pilot.press("delete")
             await pilot.pause(0.5)
             self.assertEqual(type(app.screen).__name__, "ReviewDialog")
@@ -287,6 +303,21 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(app.ran, [["remove", "steam"]])
         self.assertEqual(app.changes, [("remove", "steam", 0)])
 
+    async def test_a_click_on_the_row_selects_a_click_on_the_button_acts(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("2")
+            await pilot.pause(0.4)
+            pl = app.query_one("#is-list")
+            await pilot.click("#is-list", offset=(10, 3))         # the second row's name
+            await pilot.pause(0.4)
+            self.assertEqual(pl.highlighted, 1)
+            self.assertNotEqual(type(app.screen).__name__, "ReviewDialog", "a stray click never starts anything")
+            await pilot.click("#is-list", offset=(pl.size.width - 8, 3))   # its button
+            await pilot.pause(0.5)
+            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
+
     async def test_search_then_install(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
@@ -295,11 +326,13 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.2)
             for ch in "krita":
                 await pilot.press(ch)
-            await pilot.press("enter")
-            pl = app.query_one("#sr-list")
-            self.assertTrue(await self.until(pilot, lambda: len(pl.rows) == 3))
+            await pilot.click("#in-go")                       # the Search button
+            pl = app.query_one("#in-list")
+            self.assertTrue(await self.until(pilot, lambda: len(pl.rows) == 2))
             self.assertEqual(app.focused, pl, "after a search the results have the keys")
-            self.assertEqual([r.option_role for r in pl.rows], ["ok", "muted", "ok"])
+            self.assertEqual([r.package.name for r in pl.rows], ["krita", "krita-git"],
+                             "only what has the words: gimp doesn't mention krita, though nog's search matched it")
+            self.assertEqual([r.option_role for r in pl.rows], ["ok", "ok"])
             await pilot.press("enter")                         # Krita: Install
             await pilot.pause(0.5)
             self.assertEqual(type(app.screen).__name__, "ReviewDialog")
@@ -310,9 +343,11 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.5)
             self.assertEqual(app.ran, [["install", "krita"]])
             self.assertEqual(searches, ["krita"], "after a change the results are read again")
-            app.query_one("#sr-aur").set_value(False)
+            bar = app.query_one("#in-filters")
+            bar.repos = {"core", "extra", "multilib"}              # the AUR unticked in Repositories
+            bar.post_message(bar.Changed())
             await pilot.pause(0.3)
-            self.assertEqual([r.package.name for r in pl.rows], ["krita", "gimp"], "No AUR hides krita-git")
+            self.assertEqual([r.package.name for r in pl.rows], ["krita"], "unticking the AUR hides krita-git")
 
     async def test_update_shows_nogs_plan(self):
         app = self.app()
@@ -321,46 +356,13 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.press("4")
             await pilot.pause(0.4)
             ready = app.query_one("#up-ready").rows
-            held = app.query_one("#up-held").rows
-            self.assertEqual([r.package.name for r in ready], ["tzdata", "breezy"])
-            self.assertEqual(held[0].version, "7.2.7.zen1-1 → 7.2.8.zen1-2")
-            self.assertTrue(held[0].extra, "Ready on is filled from nog's date")
+            held = {r.package.name: r for r in app.query_one("#up-held").rows}
+            self.assertEqual(sorted(r.package.name for r in ready), ["breezy", "tzdata"])
+            self.assertEqual(held["linux-zen"].version, "7.2.7.zen1-1 → 7.2.8.zen1-2")
+            self.assertTrue(held["linux-zen"].extra, "Ready on is filled from nog's date")
             await pilot.click("#up-run")
             await pilot.pause(0.5)
             self.assertEqual(app.ran, [["update"]])
-
-    async def test_tiers_soonest_first_filter_change_and_promote(self):
-        app = self.app()
-        async with app.run_test(size=(100, 32)) as pilot:
-            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
-            await pilot.press("5")
-            await pilot.pause(0.4)
-            tl = app.query_one("#tr-list")
-            self.assertEqual([r.package.name for r in tl.rows], ["grubforge", "linux-zen"], "soonest first")
-            self.assertIn("Tier 1 waits 30 days", str(app.query_one("#tr-summary").render()))
-            self.assertTrue(app.query_one("#tr-show").region.width > 8, "the Show list is drawn")
-            app.query_one("#tr-show").value = "1"
-            await pilot.pause(0.3)
-            self.assertEqual([r.package.name for r in tl.rows], ["linux-zen"])
-            app.query_one("#tr-show").value = "0"
-            await pilot.pause(0.3)
-            tl.focus()
-            tl.highlighted = 0                                      # grubforge, Tier 2
-            await pilot.press("enter")
-            await pilot.pause(0.4)
-            self.assertEqual(type(app.screen).__name__, "TierDialog")
-            app.screen.query_one("#td-tier").set_value("3")
-            await pilot.press("t")
-            await pilot.pause(0.5)
-            self.assertEqual(app.ran, [["pin", "grubforge", "--tier", "3"]])
-            await pilot.press("enter")                              # the same row again: promote this time
-            await pilot.pause(0.4)
-            await pilot.press("p")
-            await pilot.pause(0.5)
-            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
-            await pilot.click("#go")
-            await pilot.pause(0.5)
-            self.assertEqual(app.ran[-1], ["unlock", "grubforge", "--promote"])
 
     async def test_nog_missing_is_said_not_crashed(self):
         os.environ["NOGFORGE_NOG"] = str(self.dir / "missing")
@@ -390,7 +392,7 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
                 for pl in app.screen.query("PackageList"):
                     for r in pl.rows:
                         from nogforge.ui.packages import colours
-                        t = pl.draw(r, 1, max(pl.size.width - 2, 80), colours(app), "")
+                        t = pl.draw(r, 1, max(pl.size.width - 2, 80), colours(app))
                         for line in t.split("\n"):
                             self.assertLessEqual(line.cell_len, max(pl.size.width - 2, 80), f"{r.package.name}")
 
@@ -408,10 +410,10 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.press("3")
             for ch in "krita":
                 await pilot.press(ch)
-            await pilot.press("enter")
-            await pilot.pause(1.0)
+            await pilot.press("enter")                         # Enter searches too
+            self.assertTrue(await self.until(pilot, lambda: bool(app.query_one("#in-list").rows)))
             self.assertIsNone(app._exception)
-            self.assertTrue(app.query_one("#sr-list").rows[0].option.startswith("Install"), "words, not marks")
+            self.assertTrue(app.query_one("#in-list").rows[0].option.startswith("Install"), "words, not marks")
 
     async def test_closing_note(self):
         from nogforge.cli import summary
@@ -421,6 +423,11 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(heading, "nogForge · 1 change made")
         self.assertEqual(lines, ["Installed krita.", "Remove steam: nog stopped (status 1)."])
         self.assertEqual(level, "warn")
+        # every kind of change nogForge can hand to nog has its words (Javier's run: "promote" crashed it)
+        app.changes = [(a, "x", 0) for a in ("install", "remove", "update", "clean", "promote", "pin", "new-kind")]
+        heading, lines, _ = summary(app)
+        self.assertEqual(len(lines), 7)
+        self.assertIn("Promoted x.", lines)
 
 
 class CommandLineAndNames(unittest.TestCase):
@@ -443,7 +450,7 @@ class CommandLineAndNames(unittest.TestCase):
         from nogforge.app import MANUAL_DIR, NogForgeApp
         ids = {pid for pid, _t, _m in load_pages(MANUAL_DIR)}
         for m in NogForgeApp.MENU:
-            if m["kind"] == "section":
+            if m["kind"] == "section" or m["id"] == "history":
                 self.assertIn(m["id"], ids, f"F1 on {m['title']} would open nothing")
         self.assertIn("keys", ids)
 
@@ -471,8 +478,11 @@ a = sys.argv[1:]
 log = open(os.environ["NOGFORGE_TEST_DATA"] + ".ran", "a")
 if a == ["--version"]:
     print("nog 1.6.0"); sys.exit(0)
-def plan(keep):
-    ready, held = [], list(d["plan"]["held"])
+def plan(keep, promote=()):
+    ready, held = [], [r for r in d["plan"]["held"] if r["name"] not in promote]
+    for r in d["plan"]["held"]:
+        if r["name"] in promote:
+            ready.append({**r, "note": "promoted by you"})
     stay = set(keep)
     for k in keep:
         stay |= set(d["couples"].get(k, []))
@@ -487,16 +497,17 @@ def plan(keep):
             ready.append(r)
     return {**d["plan"], "ready": ready, "held": held}, stay
 keep = a[a.index("--keep") + 1].split(",") if "--keep" in a else []
+promote = a[a.index("--promote") + 1].split(",") if "--promote" in a else []
 if "--json" in a:
     if a[0] == "list":
         pk = [{**p, "version": state.get(p["name"], p["version"])} for p in d["list"]["packages"]]
         print(json.dumps({**d["list"], "packages": pk}))
     elif a[0] == "update":
-        print(json.dumps(plan(keep)[0]))
+        print(json.dumps(plan(keep, promote)[0]))
     sys.exit(0)
 log.write(" ".join(a) + "\n")
 if a[0] == "update":
-    p, stay = plan(keep)
+    p, stay = plan(keep, promote)
     for r in p["ready"]:
         state[r["name"]] = r["new"]
 elif a[0] == "unlock":
@@ -573,7 +584,7 @@ class Choices(unittest.IsolatedAsyncioTestCase):
         async with app.run_test(size=(100, 32)) as pilot:
             ready = await self.open_update(app, pilot)
             ready.focus()
-            ready.highlighted = 1                                  # ldb
+            pick(ready, "ldb")
             await pilot.press("space")
             self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
             await pilot.pause(0.3)
@@ -583,18 +594,28 @@ class Choices(unittest.IsolatedAsyncioTestCase):
                              (False, "must stay back with ldb"), "nog's coupling, shown under the box")
             self.assertTrue(rows["tzdata"].tick)
             self.assertIn("(1)", str(app.query_one("#up-run").label))
-            ready.highlighted = 2                                  # libwbclient: ticking it ticks ldb again
+            pick(ready, "libwbclient")                             # ticking it ticks ldb again
             await pilot.press("space")
+            self.assertTrue(await self.until(pilot, lambda: not app.keep and not app.keep_busy))
             await pilot.pause(0.4)
             self.assertEqual(app.keep, set())
             self.assertTrue(all(r.tick for r in ready.rows))
+
+    async def test_a_click_on_the_box_unticks(self):
+        # Javier's run: "I could not de-select a package that is ticked"
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            y = [r.package.name for r in ready.rows].index("ldb") * 2 + 1 - ready.scroll_offset.y
+            await pilot.click("#up-ready", offset=(2, y))
+            self.assertTrue(await self.until(pilot, lambda: "ldb" in app.keep))
 
     async def test_update_the_ticked_ones_then_what_changed(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             ready = await self.open_update(app, pilot)
             ready.focus()
-            ready.highlighted = 1
+            pick(ready, "ldb")
             await pilot.press("space")
             self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
             await pilot.press("u")
@@ -608,32 +629,57 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.3)
             self.assertFalse(app.restarted)
 
-    async def test_promote_a_kernel_then_restart_or_later(self):
+    async def test_promote_makes_it_ready_then_the_update_takes_it(self):
+        # Javier, 3 Oct: "shouldn't promote just bring the package to due, so it enters the ready list?"
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await self.open_update(app, pilot)
             held = app.query_one("#up-held")
             held.focus()
-            await pilot.press("enter")
-            await pilot.pause(0.5)
-            self.assertEqual(type(app.screen).__name__, "ReviewDialog")
-            await pilot.click("#go")
+            pick(held, "linux-zen")
+            await pilot.press("enter")                              # ↑ Promote
+            self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
+            await pilot.pause(0.3)
+            self.assertEqual(self.ran(), [], "promoting installs nothing by itself")
+            ready = {r.package.name: r for r in app.query_one("#up-ready").rows}
+            self.assertEqual((ready["linux-zen"].tick, ready["linux-zen"].note), (True, "promoted by you"))
+            self.assertNotIn("linux-zen", [r.package.name for r in app.query_one("#up-held").rows])
+            await pilot.press("u")
             self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
-            self.assertEqual(self.ran(), ["unlock linux-zen --promote"])
+            self.assertEqual(self.ran(), ["update --promote linux-zen"])
             self.assertTrue(app.screen.query("#restart"), "a new kernel: Restart Now (r) offered")
             self.assertEqual(app.focused.id, "later", "Enter alone never restarts")
             await pilot.press("enter")
             await pilot.pause(0.3)
             self.assertFalse(app.restarted)
 
+    async def test_unticking_a_promoted_one_sends_it_back_to_wait(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await self.open_update(app, pilot)
+            held = app.query_one("#up-held")
+            held.focus()
+            pick(held, "linux-zen")
+            await pilot.press("enter")
+            self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
+            ready = app.query_one("#up-ready")
+            ready.focus()
+            pick(ready, "linux-zen")
+            await pilot.press("space")
+            self.assertTrue(await self.until(pilot, lambda: not app.promote and not app.keep_busy))
+            await pilot.pause(0.3)
+            self.assertIn("linux-zen", [r.package.name for r in app.query_one("#up-held").rows])
+
     async def test_restart_now(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await self.open_update(app, pilot)
-            app.query_one("#up-held").focus()
+            held = app.query_one("#up-held")
+            held.focus()
+            pick(held, "linux-zen")
             await pilot.press("enter")
-            await pilot.pause(0.5)
-            await pilot.click("#go")
+            self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
+            await pilot.press("u")
             self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
             await pilot.press("r")
             await pilot.pause(0.3)

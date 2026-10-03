@@ -92,8 +92,11 @@ def search(query: str) -> list[Package]:
                     installed=p.get("installed", False)) for p in d.get("results", [])]
 
 
-def plan(keep: list[str] | None = None) -> dict:
-    args = ["update"] + (["--keep", ",".join(keep)] if keep else [])
+def plan(keep: list[str] | None = None, promote: list[str] | None = None) -> dict:
+    """nog's update plan; with what you keep back and what you promote, nog
+    works out what must move or stay with them."""
+    args = ["update"] + (["--keep", ",".join(keep)] if keep else []) + \
+        (["--promote", ",".join(promote)] if promote else [])
     return ask(*args, timeout=600)
 
 
