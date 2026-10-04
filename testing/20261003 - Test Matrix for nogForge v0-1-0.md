@@ -57,7 +57,7 @@ Read from the machine: nog 1.6.0rc1 installed with nog (12:15); `nog unlock arch
 
 | ID | Do | Expect | Result |
 |---|---|---|---|
-| 8.1 | `nog install ~/Programs/nog/dist-rc/nog-1.6.0rc3-1-x86_64.pkg.tar.zst` | only nog installs, nothing else (nog F-8, #41); `nog --version` says 1.6.0-rc.3 | rc.2 went in 3 Oct 21:16, but nog updated 20 packages first: that was F-8 |
+| 8.1 | `nog install ~/Programs/nog/dist-rc/nog-1.6.0rc3-1-x86_64.pkg.tar.zst` | only nog installs, nothing else (nog F-8, #41); `nog --version` says 1.6.0-rc.3 | rc.2 went in 3 Oct 21:16, but nog updated 20 packages first: that was F-8. **rc.3: PASS** (21:27, only nog; no update lines in nog's update log) |
 | 8.2 | `python3 ~/Programs/nogforge/main.py`; **2** In-System | the filter bar; Show Yours (254); Type; Tier; Repositories (p) opens a window with core, extra, multilib, chaotic-aur, AUR; the Repository column; Remove buttons grey, blue under the mouse; the selected row clearly different from the shaded ones | |
 | 8.3 | **3** Install: type `calc`, click **🔍 Search** | calc near the top, no perl; Yours/Installed on what you have; Type, Tier, Repositories narrow it | |
 | 8.4 | **4** Update: click a ticked box, or Space | it unticks ("kept back by you"); partners untick with the reason; again to tick | |
