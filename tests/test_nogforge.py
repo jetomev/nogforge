@@ -719,6 +719,8 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.press("u")
             self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
             self.assertEqual(self.ran(), ["update tzdata"], "nog 1.6.1: the ticked ones by name, only those")
+            self.assertFalse([n for n in app._notifications if n.title == "Not done"],
+                             "a finished update never says nog stopped (Javier, 4 Oct)")
             text = " ".join(str(w.render()) for w in app.screen.query("Static"))
             self.assertIn("1 updated", text)
             self.assertIn("Kept back by you: ldb, libwbclient", text)

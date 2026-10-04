@@ -88,4 +88,5 @@ Findings F-1…F-9: issues #2–#10, each opened and closed with its fix.
 | 8.4 untick | works, but slow to show and every click asked nog → **F-10 (#11)**, fixed: shown at once, quick clicks batched into one question |
 | 8.4 the waiting message | grey "asking nog…" → **F-11 (#12)**, fixed: yellow banner beside the update button, which waits in cream |
 | 8.6 update (08:48, `--keep wolfssl`) | nog printed the whole report, 70 on hold; Javier stopped at "Begin the handoff?", nothing installed → **nog F-10 (#44)**: a named list shows only those, a held one must be promoted; nogForge sends the ticked ones by name (needs nog 1.6.1) |
+| 8.6 again (10:04, nog 1.6.1-rc.1) | freerdp unticked → `nog update vde2 wolfssl`: only those two, installed, exit 0. The alert said "nog stopped (status 0)" → **F-12 (#13)**, fixed. pacman still lists ~70 "ignoring package upgrade" lines (nog, open question) |
 | 8.5 promote | pending |

@@ -571,8 +571,11 @@ class NogForgeApp(ForgeApp):
         self.changes.append((action, shown, code))
         word = {"install": "Installed", "remove": "Removed", "update": "Update finished",
                 "clean": "Clean-up finished", "promote": "Promoted", "pin": "Tier changed"}
-        if code == 0 and action not in ("update", "promote"):
-            self.notify(f"{word[action]}: {shown or 'done'}.", title="nog finished", timeout=8)
+        # Javier, 4 Oct: a finished update said "nog stopped". Success on an update
+        # is told by What changed; the warning is only for a run that didn't finish.
+        if code == 0:
+            if action not in ("update", "promote"):
+                self.notify(f"{word[action]}: {shown or 'done'}.", title="nog finished", timeout=8)
         else:
             self.notify(f"nog stopped (status {code}): declined, or something went wrong — nog's own words are "
                         f"in the terminal above, and in History.", title="Not done", severity="warning", timeout=12)
