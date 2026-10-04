@@ -4,6 +4,14 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## Now · v1.1.0 — nog runs inside nogForge (Javier, 4 Oct: options 1 → 2 → 3) · issue #14
+- [x] Research (`docs/research/2026-10-04-nog-inside-the-ui.md`); Javier chose 1 (terminal pane + password in the app), 2 (steps view), 3 (grubForge's polkit box)
+- [x] Built on forgekit 0.6.0 (RunWindow, PasswordBridge) and nog 1.7.0 (NOG_EVENTS, `repo/name`); installs name the row's source; 37 tests
+- [x] KognogOS VM, real text console: install (repo + AUR via yay), update with steps, cancelled password, remove — all PASS (matrix `testing/20261004 - Test Matrix for nogForge v1-1-0.md` §1)
+- [ ] **Javier's desktop test** (§2): `bash scripts/install-rc.sh`, then the matrix
+- [ ] Release after his test: forgekit 0.6.0 → nog 1.7.0 → grubForge 2.1.0 → nogForge 1.1.0 (docs, man pages, CHANGELOGs, tags, GitHub, AUR in that order); kognogos.org; close #14, forgekit#6, nog#45, grubforge#36
+- [ ] Decide: nogForge on the KognogOS disc? (it isn't in `iso/packages.x86_64`)
+
 ## Decided (Javier, 3 Oct 2026)
 
 - **What it is:** nog's wrapper *and* Pamac's functions in a TUI. Screens: **Dashboard** ("sexy"), **Home** (installed apps: the 254 you chose by default, all 1,518 on a switch; name, version, description, tier, a category badge from `archlinux-appstream-data` since Alacritty can't draw icons; uninstall on the left), **Search** (types from AppStream: Office, Games, Internet…; same list, install on the left), **Update** (visual: Repositories, Ready with checkboxes guarded by nog's coupling — untick one, nog says what must stay back with it —, Held with Promote, Unknown, review, nog's real run, "What changed"), **Tiers** (All/1/2/3 dropdown, sorted by next update date, change tier = nog pin, Promote = nog unlock), **Settings** (nog holds/safety days/sources; pacman.conf safe options; **add/remove repositories**: signatures required by default, key fingerprint shown before trusting, core/extra never removable; clean cache), **History** (nog's log), Help, Quit.
