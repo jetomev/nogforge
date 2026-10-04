@@ -30,10 +30,10 @@ four packages and asks; your password once). Log: `nogforge/logs/install-rc-late
 | ID | Do | Expect | Result |
 |---|---|---|---|
 | 2.0 | `install-rc.sh` | **PASS** (12:16) — nog 1.7.0rc1, forgekit 0.6.0rc1, grubforge 2.1.0rc1, nogforge 1.1.0rc1 in; pyte already there. *Small finding: nog's ===== banner lines are as wide as the longest line, so four file paths made them ~330 characters (cap them at the terminal width).* | |
-| 2.1 | `nogforge`, **4** Update, tick what you like, **u** | a window *inside* nogForge: steps (Checking for updates ✓ · Official packages …), a progress bar; nog's question with **Yes (y)** / **No (n)** | |
-| 2.2 | answer **y** | nogForge's own password box (not KDE's window); then pacman's question with Yes/No, its table in view | |
-| 2.3 | finish, **Close** | "Updated."; What changed; no "nog stopped" | |
-| 2.4 | **F12** during a run | nog's own screen opens/folds | |
+| 2.1 | `nogforge`, **4** Update, tick what you like, **u** | a window *inside* nogForge: steps (Checking for updates ✓ · Official packages …), a progress bar; nog's question with **Yes (y)** / **No (n)** || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
+| 2.2 | answer **y** | nogForge's own password box (not KDE's window); then pacman's question with Yes/No, its table in view || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
+| 2.3 | finish, **Close** | "Updated."; What changed; no "nog stopped" || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
+| 2.4 | **F12** during a run | nog's own screen opens/folds || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
 | 2.5 | **3** Install, search, **Enter** on a row, **i** | the review answers to **i**; same window, password, Yes; "Installed." | |
 | 2.6 | an install, then **Esc** on the password box | "nog stopped (status 1)", nog's screen open, nothing changed | |
 | 2.7 | `grubforge`, Backups, **Back up now (N)** | grubForge's own password box (not KDE's window); a backup appears | |
