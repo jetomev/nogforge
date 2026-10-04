@@ -6,7 +6,7 @@
 ![Platform: KognogOS / Arch](https://img.shields.io/badge/Platform-KognogOS%20%2F%20Arch-lightgrey.svg)
 ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)
 ![Status: Beta](https://img.shields.io/badge/Status-Beta-orange.svg)
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-purple.svg)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-purple.svg)
 
 ---
 
@@ -21,11 +21,11 @@ nogForge brings what [Pamac](https://github.com/manjaro/pamac), Manjaro's softwa
 ## What's in the beta
 
 - 🏠 **Dashboard**: updates per source and tier (nog's real plan), your packages per source and tier, the last things nog did, and the space old downloads take.
-- 📦 **Home**: your installed packages, spreadsheet-style: badge, name, version, tier, and **Remove** on the right, with what it is underneath. System packages are **Locked**, with the reason: the system needs it to start, it's part of the base system, or another package needs it.
-- 🔎 **Search**: the repositories and the AUR, with a type (Games, Graphics, Office…) and **Install** on the right.
-- ⬆ **Update**: nog's plan with your choices. Untick an update to keep it back, and **nog** says what must stay back with it (packages that only work at matching versions untick themselves, with the reason), so a half-updated, broken system can't happen. **↑ Promote** a held one. Afterwards, **What changed** compares versions before and after, and after a new kernel offers **Restart Now (r)** or **Later (l)**.
-- ⏳ **Tiers**: everything nog is holding, soonest first, by tier; change a package's tier or promote it.
-- 🗂 **History**: every install, removal and update nog ran, from nogForge or a terminal.
+- 📦 **In-System**: what's on this computer, spreadsheet-style: badge, name, version, tier, repository, and a **✕ Remove** button, with what it is underneath. System packages are **Locked**, with the reason: the system needs it to start, it's part of the base system, or another package needs it.
+- 🔎 **Install**: search the repositories and the AUR (names and descriptions, best matches first) and **+ Install**.
+- One **filter bar** on both: Search with a 🔍 button, Show (yours or all), Type (Games, Graphics, Office…), Tier, and **Repositories (p)**, a window to tick the repositories to show.
+- ⬆ **Update**: nog's plan with your choices. Untick an update to keep it back, and **nog** says what must stay back with it, so a half-updated, broken system can't happen. **↑ Promote** makes a held one ready now; it goes in with the rest. Afterwards, **What changed** compares versions before and after, and after a new kernel offers **Restart Now (r)** or **Later (l)**.
+- 🗂 **History**: **Activity** (everything nog ran, in plain words) and **nog Logs** (nog's own record; Enter opens a run whole, as it appeared on screen).
 - 🔐 **Your password goes to the system's own window**, never to nogForge (like grubForge). The change itself runs in the terminal, where pacman shows what comes with it and asks first.
 - 📖 A manual inside the app (**F1**), readable on a plain text console, nothing cut off at 100 columns.
 
@@ -62,7 +62,7 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 
 - KognogOS or Arch Linux
 - **nog 1.6.0 or newer** (nogForge reads its `--json` answers)
-- Python 3.11+, `python-textual`, `python-rich`, [`python-forgekit`](https://github.com/jetomev/forgekit) 0.5.1+
+- Python 3.11+, `python-textual`, `python-rich`, [`python-forgekit`](https://github.com/jetomev/forgekit) 0.5.2+
 - `archlinux-appstream-data` for app names and badges (optional; without it every package gets the plain badge)
 - A password window for `sudo -A` (KDE's `ksshaskpass`, or `x11-ssh-askpass`); without one, nog asks in the terminal
 
@@ -81,14 +81,16 @@ nogForge isn't on the AUR yet: it stays a beta until everything in the design is
 
 | Key | Does |
 |---|---|
-| 1 – 6 | Dashboard, Home, Search, Update, Tiers, History |
-| u / r / h | review updates (on Update: update the ticked ones) / review packages (Search) / History |
-| Space | tick or untick an update |
-| Enter | the row's option: install, remove, promote, or change its tier |
-| Del | remove the selected package (Home) |
-| / | find |
-| c | clean up old downloads (asks first) |
+| 1 – 6 | Dashboard, In-System, Install, Update, Activity, nog Logs |
+| u | open Update · on Update: update the ticked ones |
+| r | review packages (Install) |
 | k | check for updates |
+| c | clean up old downloads (asks first) |
+| p | Repositories (In-System, Install) |
+| Space | tick or untick an update |
+| Enter | the row's option: install, remove, promote · on nog Logs: open the run |
+| Del | remove the selected package (In-System) |
+| / | search |
 | F1 | help on this screen |
 | ? | all keys |
 | q | quit |
@@ -97,17 +99,29 @@ nogForge isn't on the AUR yet: it stays a beta until everything in the design is
 
 ## Roadmap (betas, each tested by Javier before the next)
 
-- [x] **0.1** — Dashboard, Home, Search, install and remove, History
-- [x] **0.2** — Update with choices: untick to keep back (nog says what must stay with it), promote a held one, "What changed", restart after a kernel update
-- [x] **0.3** — Tiers: everything waiting, change a tier, promote
 - [ ] **0.4** — Settings: nog's holds and sources, pacman's safe options, repositories (signatures required, key checked first), cleaning
-- [ ] **Later** — Flatpak and Snap installs (with nog), then 1.0
+- [ ] **Later** — Flatpak and Snap installs (with nog), the AUR package, then 1.0
+
+---
+
+## Changelog
+
+### v0.3.0 — October 3, 2026 · first beta
+
+The design approved on 3 October, built the same morning, then reworked after Javier's two runs on the desktop the same day (*"This is a work of art my friend"*). Needs [nog 1.6.0](https://github.com/jetomev/nog/releases/tag/v1.6.0).
+
+- Dashboard, In-System, Install, Update (with choices) and History, as above.
+- From Javier's runs: Home became **In-System** and Search **Install**; one filter bar with a Search button, a Tier filter and a Repositories window; a Repository column; options drawn as buttons, blue under the mouse; **Promote makes an update ready** instead of installing it alone (nog's `--promote`); the Tiers screen folded away; History split into Activity and nog Logs, with each run's full log.
+- Fixed ([F-1 to F-9](https://github.com/jetomev/nogforge/issues?q=label%3Afinding+is%3Aclosed)): a crash when quitting after a promote; "calc" finding perl first; shaded and selected rows the same colour; an update that couldn't be unticked; Promote installing at once; screen keys typed into the Search box; a click on a row's name opening the review; the two filter lines touching, boxes not lined up, short buttons, and **c** meaning two things (now always Clean Up; **k** checks for updates).
+- The bottom bar showing the last screen's keys was fixed in [forgekit 0.5.2](https://github.com/jetomev/forgekit/releases/tag/v0.5.2), for every Forge app.
+
+Tests: 33. Readable on a plain text console, every screen.
 
 ---
 
 ## How this project is built
 
-A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (27 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
+A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (33 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
 
 ## Authors
 

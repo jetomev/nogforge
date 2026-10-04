@@ -3,7 +3,7 @@
 *How this project is built, tested and shipped. Written for the AI co-developer, and public on purpose: it is part of how the human + AI method is documented.*
 
 ## What it is
-A [forgekit](https://github.com/jetomev/forgekit) (Python/Textual) terminal app for packages on KognogOS: **nog's wrapper, with what Pamac does, in a terminal** (Javier, 3 Oct 2026). Screens: Dashboard, Home (installed apps), Search, Update, Tiers, Settings, History, Help. Decisions in `TODO.md` ("Decided").
+A [forgekit](https://github.com/jetomev/forgekit) (Python/Textual) terminal app for packages on KognogOS: **nog's wrapper, with what Pamac does, in a terminal** (Javier, 3 Oct 2026). Screens: Dashboard, In-System (installed), Install, Update, History (Activity, nog Logs), Help; Settings next. Tiers was folded away (Javier, 3 Oct: "isn't actually needed"). Decisions in `TODO.md` ("Decided").
 
 ## Non-negotiables
 - **nog does the thinking; nogForge shows it.** Tiers, holds, hold dates, coupling (which packages must move together) come from nog (`--json`, nog ≥ 1.6.0), never recomputed here. Two copies of that logic would disagree.

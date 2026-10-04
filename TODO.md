@@ -24,8 +24,8 @@
 - [ ] **Tomorrow (Javier):** Update ticks/unticks/promote once updates are ready again (8.4–8.6).
 - [x] **nog Logs shows each run whole (3 Oct)** — Javier's idea; nog 1.6.0-rc.4 keeps every run as a `.log` (30 days, nog #42); Enter opens it; older runs fall back to the CSV lines.
 - [x] **Bottom bar kept the last screen's keys** (Javier, 3 Oct) — a forgekit bug, in all four apps; fixed in forgekit `8f14c39` (needs forgekit 0.5.2 on the AUR for installed apps). Dashboard bar now names c clean up.
-- [ ] **At release:** issues for F-1…F-7 and the second-run fixes (release rule: every finding gets an issue).
-- [ ] **Ask Javier:** release as one beta (0.3.0) after his run, or 0.1 first? Title still says 0.1.0.
+- [x] **v0.3.0 RELEASED 3 Oct (first beta; Javier: "push … to final versions")** — signed tag, GitHub Release (Latest). Not on the AUR (beta until Flatpak + Snap). F-1…F-9 = issues #2–#10, opened and closed. 33 tests.
+- [ ] **4 Oct (Javier):** Update untick / promote / update (matrix §8.4–8.6); new findings → issues, fix, 0.3.x.
 - [ ] **Javier's run**: `testing/20261003 - Test Matrix for nogForge v0-1-0.md` §6 (includes 6.8b–d for choices and Tiers).
 - [ ] **0.4 Settings — not started on purpose:** it writes /etc files (nog.conf holds, pacman.conf, repositories with key trust). nog has no command for those yet; it needs either nog commands (`nog config …`, `nog repo add/remove`) or a grubForge-style privileged helper. A design question for Javier, and security-sensitive.
 - [ ] **Nothing committed yet**: the GPG passphrase had expired (the pinentry window timed out at 09:05 with Javier away). Commit in steps once he unlocks it: nog (`feat` + rc script), nogForge (0.1 code, tests, manual, README, matrix).

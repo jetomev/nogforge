@@ -21,8 +21,9 @@ Usage:
   nogforge --version   print the version
   nogforge --help      print this
 
-Inside: 1-5 change screens, u reviews updates, r searches, Enter on a row does
-its option (install or remove), F1 explains, ? lists every key.
+Inside: 1-6 change screens, u reviews updates, r installs, k checks for updates,
+c cleans up, the button on a row does its option (install, remove, promote),
+F1 explains, ? lists every key.
 nogForge shows what nog decides; it needs nog 1.6.0 or newer.
 """
 

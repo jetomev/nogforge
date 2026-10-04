@@ -65,3 +65,18 @@ Read from the machine: nog 1.6.0rc1 installed with nog (12:15); `nog unlock arch
 | 8.6 *(optional)* | **u** | nog in the terminal with what you kept back and promoted; What changed afterwards | |
 | 8.7 | **History ▸ Activity** and **History ▸ nog Logs**; Enter on the grubforge line | the tables; the window with every package of that run | |
 | 8.8 | **q** | the closing note, no crash | |
+
+## 9 · Status at release (v0.3.0, 3 Oct ~22:45)
+
+Released at Javier's word ("push … to final versions … both nog and nogForge are very solid"), with his Update test still to come.
+
+| ID | Result |
+|---|---|
+| 8.1 | PASS (rc.3, then rc.4, rc.5) |
+| 8.2 In-System · 8.3 Install | PASS ("good"); layout notes → F-8, fixed |
+| 8.4–8.6 Update (untick, promote, update) | **pending: 4 Oct**, when updates are ready again ("good" on what he could see) |
+| 8.7 History | log window: full-run logs added (nog #42) |
+| 8.8 quit | PASS |
+| Bottom bar per screen | fixed in forgekit 0.5.2 (installed 22:18) |
+
+Findings F-1…F-9: issues #2–#10, each opened and closed with its fix.
