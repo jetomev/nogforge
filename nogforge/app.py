@@ -139,6 +139,21 @@ def count_snaps() -> int | None:
     return len([n for n in names if not (n.startswith("core") or n in ("snapd", "bare"))])
 
 
+def update_args(plan: dict, keep: set[str], promote: set[str]) -> list[str]:
+    """What Update hands nog. nog 1.6.1 takes the ticked ones by name and shows
+    only those (Javier, 4 Oct: "a specific list, it's intentional"); a held one
+    must be promoted, which these are. An older nog gets what you kept back."""
+    promoted = ["--promote", ",".join(sorted(promote))] if promote else []
+    try:
+        named = tuple(int(x) for x in plan.get("nog", "").split("-")[0].split(".")[:3]) >= (1, 6, 1)
+    except ValueError:
+        named = False
+    if not named:
+        return (["--keep", ",".join(sorted(keep))] if keep else []) + promoted
+    ticked = {r["name"] for r in plan.get("ready", [])} | {r["name"] for r in plan.get("unknown", [])}
+    return sorted(ticked) + promoted
+
+
 class NogForgeApp(ForgeApp):
     APP_NAME = f"nogForge {__version__} · packages, the KognogOS way · beta"
     SHOW_HINT_BAR = True
@@ -543,9 +558,7 @@ class NogForgeApp(ForgeApp):
     def update_ticked(self) -> None:
         if self.keep_busy:
             return                              # nog is still working out your choices: the banner says so
-        args = (["--keep", ",".join(sorted(self.keep))] if self.keep else []) + \
-            (["--promote", ",".join(sorted(self.promote))] if self.promote else [])
-        self.hand_off("update", args)
+        self.hand_off("update", update_args(self.choice_plan() or {}, self.keep, self.promote))
 
     def hand_off(self, action: str, names: list[str]) -> None:
         """Give the terminal to nog for a change, then come back and read everything again."""

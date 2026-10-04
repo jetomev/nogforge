@@ -499,6 +499,14 @@ def plan(keep, promote=()):
     return {**d["plan"], "ready": ready, "held": held}, stay
 keep = a[a.index("--keep") + 1].split(",") if "--keep" in a else []
 promote = a[a.index("--promote") + 1].split(",") if "--promote" in a else []
+named, i = [], 1
+while i < len(a):                                   # nog 1.6.1: update a b c, only those
+    if a[i].startswith("--"):
+        i += 1 if a[i] == "--json" else 2
+        continue
+    named.append(a[i]); i += 1
+if a and a[0] == "update" and named:
+    keep += [r["name"] for r in d["plan"]["ready"] if r["name"] not in named]
 if "--json" in a:
     if a[0] == "list":
         pk = [{**p, "version": state.get(p["name"], p["version"])} for p in d["list"]["packages"]]
@@ -524,7 +532,7 @@ CHOICE_LIST = {"nog": "1.6.0", "kind": "list", "packages": [
      "required_by": [], "protected": None}
     for n, v, t in (("tzdata", "2026d-1", 3), ("ldb", "2:4.24.7-1", 3), ("libwbclient", "2:4.24.7-1", 3),
                     ("linux-zen", "7.2.7.zen1-1", 1))]}
-CHOICE_PLAN = {"nog": "1.6.0", "kind": "plan", "sources": {}, "unknown": [],
+CHOICE_PLAN = {"nog": "1.6.1", "kind": "plan", "sources": {}, "unknown": [],
                "ready": [{"name": "tzdata", "source": "core", "tier": 3, "old": "2026d-1", "new": "2026e-1",
                           "note": "hold just expired"},
                          {"name": "ldb", "source": "extra", "tier": 3, "old": "2:4.24.7-1", "new": "2:4.25.0-1",
@@ -683,6 +691,14 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await self.until(pilot, lambda: not app.keep_busy))
             self.assertEqual(self.asked(), ["update --keep tzdata --json"], "one question, with the last choices")
 
+    def test_update_hands_nog_the_ticked_list_or_for_an_older_nog_what_you_kept(self):
+        from nogforge.app import update_args
+        plan = {"nog": "1.6.1", "ready": [{"name": "vde2"}, {"name": "git"}], "unknown": [{"name": "x"}]}
+        self.assertEqual(update_args(plan, {"freerdp"}, {"git"}), ["git", "vde2", "x", "--promote", "git"])
+        self.assertEqual(update_args({**plan, "nog": "1.6.0"}, {"freerdp"}, {"git"}),
+                         ["--keep", "freerdp", "--promote", "git"], "nog 1.6.0 has no named list")
+        self.assertEqual(update_args({**plan, "nog": "1.7.0-rc.1"}, set(), set()), ["git", "vde2", "x"])
+
     async def test_a_click_on_the_box_unticks(self):
         # Javier's run: "I could not de-select a package that is ticked"
         app = self.app()
@@ -702,7 +718,7 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await self.until(pilot, lambda: app.keep_plan is not None))
             await pilot.press("u")
             self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
-            self.assertEqual(self.ran(), ["update --keep ldb"], "only what you unticked: nog adds the rest")
+            self.assertEqual(self.ran(), ["update tzdata"], "nog 1.6.1: the ticked ones by name, only those")
             text = " ".join(str(w.render()) for w in app.screen.query("Static"))
             self.assertIn("1 updated", text)
             self.assertIn("Kept back by you: ldb, libwbclient", text)
@@ -741,7 +757,8 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("linux-zen", [r.package.name for r in app.query_one("#up-held").rows])
             await pilot.press("u")
             self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
-            self.assertEqual(self.ran(), ["update --promote linux-zen"])
+            self.assertEqual(self.ran(), ["update ldb libwbclient linux-zen tzdata --promote linux-zen"],
+                             "the ticked ones by name, the promoted one among them")
             self.assertTrue(app.screen.query("#restart"), "a new kernel: Restart Now (r) offered")
             self.assertEqual(app.focused.id, "later", "Enter alone never restarts")
             await pilot.press("enter")
