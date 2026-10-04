@@ -1,7 +1,7 @@
 """Talking to nog (v0.1.0).
 
 nog does the thinking; nogForge shows it (Javier, 3 Oct 2026). Everything
-here asks nog ≥ 1.6.1 for JSON — the installed list, search, the update plan —
+here asks nog ≥ 1.7.0 for JSON — the installed list, search, the update plan —
 and never works out a tier, a hold or a coupling itself.
 
 Changes (install, remove, update) are *handed* to nog, which runs inside
@@ -40,7 +40,7 @@ def ask(*args: str, timeout: float = 300) -> dict:
     """Run ``nog <args> --json`` and return its one JSON document."""
     nog = binary()
     if not nog:
-        raise NogError("nog isn't installed. nogForge shows what nog decides, so it needs nog 1.6.1 or newer.")
+        raise NogError("nog isn't installed. nogForge shows what nog decides, so it needs nog 1.7.0 or newer.")
     try:
         p = subprocess.run([nog, *args, "--json"], stdin=subprocess.DEVNULL, capture_output=True, text=True,
                            timeout=timeout)
@@ -52,7 +52,7 @@ def ask(*args: str, timeout: float = 300) -> dict:
     if p.returncode != 0 and not out:
         last = (p.stderr.strip().splitlines() or ["no reason given"])[-1]
         if "unexpected argument '--json'" in p.stderr or "unrecognized subcommand" in p.stderr:
-            raise NogError("This nog is older than 1.6.1, which nogForge needs. Update it: nog install nog")
+            raise NogError("This nog is older than 1.7.0, which nogForge needs. Update it: nog install nog")
         raise NogError(f"nog stopped: {last}")
     try:
         return json.loads(out.splitlines()[-1])

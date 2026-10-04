@@ -17,7 +17,7 @@ The wait exists to catch a version that turns out to be broken, so promote what 
 
 ## Updating
 
-**Update the Ticked Ones (u)** hands nog exactly the ticked ones, by name, in the terminal: nog shows only those and asks before anything changes, and the password comes through the system's window. pacman then lists each package it skips (the held ones); nog says so first. A held package goes in only when promoted. **Check for Updates (k)** asks nog again and starts your choices fresh.
+**Update the Ticked Ones (u)** hands nog exactly the ticked ones, by name, in a window inside nogForge: nog shows only those and asks before anything changes, and the password is asked in nogForge's own box. pacman then lists each package it skips (the held ones); nog says so first. A held package goes in only when promoted. **Check for Updates (k)** asks nog again and starts your choices fresh.
 
 ## What changed
 

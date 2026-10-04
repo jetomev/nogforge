@@ -15,6 +15,6 @@ It has the Dashboard, In-System, Install, Update (with your choices) and History
 ## How a change happens
 
 1. You pick it (the Install or Remove button on a row) and nogForge shows a review.
-2. nogForge hands the terminal to nog, which runs it there: you see pacman's own list of what comes with it (or goes with it), and it asks before anything changes.
-3. Your password is asked by the system's own window. nogForge never sees it.
-4. Press Enter, and you're back in nogForge, with everything read again.
+2. nog runs it in a window inside nogForge: its steps and a progress bar. When nog or pacman asks something, nog's own screen opens with pacman's list of what comes with it (or goes with it); answer with **Yes (y)** or **No (n)**. **F12** shows or folds nog's screen anytime.
+3. Your password is asked in nogForge's own box. It goes to sudo and nowhere else.
+4. When nog is done, **Close** (Enter), and everything is read again.

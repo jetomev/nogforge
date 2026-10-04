@@ -24,7 +24,7 @@ Usage:
 Inside: 1-6 change screens, u reviews updates, r installs, k checks for updates,
 c cleans up, the button on a row does its option (install, remove, promote),
 F1 explains, ? lists every key.
-nogForge shows what nog decides; it needs nog 1.6.1 or newer.
+nogForge shows what nog decides; it needs nog 1.7.0 or newer.
 """
 
 LOG_DIR = "~/.local/share/nogforge/logs"

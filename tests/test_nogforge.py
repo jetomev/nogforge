@@ -134,7 +134,7 @@ class TalkingToNog(StandIn):
         os.environ["NOGFORGE_NOG"] = str(old)
         with self.assertRaises(NogError) as e:
             nog.installed()
-        self.assertIn("older than 1.6.1", str(e.exception))
+        self.assertIn("older than 1.7.0", str(e.exception))
 
     def test_the_password_always_goes_through_the_app(self):
         # Javier, 4 Oct: the password is asked inside the app, desktop or text console alike
@@ -438,7 +438,7 @@ class CommandLineAndNames(unittest.TestCase):
             self.assertEqual(main(["--version"]), 0)
             self.assertEqual(main(["--help"]), 0)
         self.assertIn(f"nogForge {__version__}", out.getvalue())
-        self.assertIn("nog 1.6.1 or newer", out.getvalue())
+        self.assertIn("nog 1.7.0 or newer", out.getvalue())
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(main(["--nope"]), 2)
 

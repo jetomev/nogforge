@@ -1,6 +1,6 @@
 .\" nogforge.1 — nogForge man page
 .\" GNU GPL v3 — see LICENSE
-.TH NOGFORGE 1 "October 2026" "nogForge v1.0.0" "User Commands"
+.TH NOGFORGE 1 "October 2026" "nogForge v1.1.0" "User Commands"
 .
 .SH NAME
 nogforge \- packages the KognogOS way: what is installed, installing, and updates, in a terminal
@@ -29,13 +29,13 @@ packages must move together come from nog
 and are never worked out a second time.
 .PP
 A change (install, remove, update, clean up) is reviewed first, then handed
-to nog in the terminal: pacman shows exactly what comes with it and asks
-before anything changes. The password goes to the system's own password
-window when there is one
+to nog, which runs in a window inside nogForge (1.1): its steps and a
+progress bar; nog's own screen opens when nog or pacman asks something,
+when something fails, or on F12. pacman shows exactly what comes with a
+change and asks before anything changes. The password is asked in
+nogForge's own box
 .RB ( "sudo \-A" ,
-for example
-.BR ksshaskpass (1));
-on a text console nog asks for it in the terminal. nogForge never sees it.
+through a helper that asks the app), on a desktop and on a text console.
 .PP
 System packages are protected: Tier 1, Arch's
 .B base
@@ -116,10 +116,9 @@ One line per session, written when nogForge closes.
 nog's own logs, read by History.
 .
 .SH REQUIREMENTS
-nog 1.6.1 or newer, python-forgekit 0.5.2 or newer, python-textual,
-python-rich. Optional: archlinux-appstream-data (app names and badges), a
-password window for
-.BR "sudo \-A" .
+nog 1.7.0 or newer, python-forgekit 0.6.0 or newer (with python-pyte),
+python-textual, python-rich. Optional: archlinux-appstream-data (app names
+and badges).
 .
 .SH SEE ALSO
 .BR nog (1),
