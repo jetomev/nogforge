@@ -337,7 +337,7 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             app.run_search = lambda q: (searches.append(q), real(q))
             await pilot.click("#go")
             await pilot.pause(0.5)
-            self.assertEqual(app.ran, [["install", "krita"]])
+            self.assertEqual(app.ran, [["install", "extra/krita"]], "the source of the row picked (nog F-11)")
             self.assertEqual(searches, ["krita"], "after a change the results are read again")
             bar = app.query_one("#in-filters")
             bar.repos = {"core", "extra", "multilib"}              # the AUR unticked in Repositories
@@ -513,6 +513,22 @@ if "--json" in a:
         print(json.dumps(plan(keep, promote)[0]))
     sys.exit(0)
 log.write(" ".join(a) + "\n")
+log.flush()
+ev = os.environ.get("NOG_EVENTS")
+def event(**e):
+    if ev:
+        open(ev, "a").write(json.dumps(e) + "\n")
+if os.isatty(0):                     # inside nogForge's run window: behave like nog 1.7
+    event(ev="steps", steps=[{"id": "check", "label": "Checking for updates"}, {"id": "pacman", "label": "Official packages"}])
+    event(ev="step", id="check", state="done", detail="stand-in")
+    sys.stdout.write("nog: Begin the handoff? [Y/n] "); sys.stdout.flush()
+    if sys.stdin.readline().strip().lower() not in ("", "y"):
+        print("nog: Cancelled"); sys.exit(1)
+    event(ev="step", id="pacman", state="start")
+    import subprocess as sp
+    pw = sp.run([os.environ["SUDO_ASKPASS"], "[sudo] password for tester: "], capture_output=True, text=True)
+    open(os.environ["NOGFORGE_TEST_DATA"] + ".pw", "w").write(pw.stdout.strip())
+    event(ev="step", id="pacman", state="done")
 if a[0] == "update":
     p, stay = plan(keep, promote)
     for r in p["ready"]:
@@ -762,6 +778,28 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.press("enter")
             await pilot.pause(0.3)
             self.assertFalse(app.restarted)
+
+    async def test_the_update_runs_inside_nogforge_and_the_password_is_asked_there(self):
+        # Javier, 4 Oct: nog stays inside the UI; the password too
+        from forgekit import PasswordDialog, RunWindow
+        app = self.app()
+        app.run_in_terminal = None                         # the real path: forgekit's RunWindow
+        async with app.run_test(size=(100, 32)) as pilot:
+            await self.open_update(app, pilot)
+            await pilot.press("u")
+            win = lambda: next((s for s in app.screen_stack if isinstance(s, RunWindow)), None)
+            self.assertTrue(await self.until(pilot, lambda: win() is not None and win()._question is not None))
+            self.assertIn("Begin the handoff", win()._question)
+            await pilot.press("y")
+            self.assertTrue(await self.until(pilot, lambda: isinstance(app.screen, PasswordDialog)))
+            await pilot.press(*"hunter2", "enter")
+            self.assertTrue(await self.until(pilot, lambda: win() is not None and win().status is not None))
+            self.assertEqual(win().status, 0)
+            self.assertEqual([s[2] for s in win()._steps], ["done", "done"])
+            self.assertEqual(Path(str(self.data) + ".pw").read_text(), "hunter2", "the password reached sudo's helper")
+            self.assertEqual(self.ran(), ["update ldb libwbclient tzdata"])
+            await pilot.press("enter")                       # Close
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "WhatChanged"))
 
     async def test_unticking_a_promoted_one_sends_it_back_to_wait(self):
         app = self.app()

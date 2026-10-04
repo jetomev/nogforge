@@ -564,7 +564,10 @@ class NogForgeApp(ForgeApp):
             buttons=[("Remove (r)" if removing else "Install (i)", "go", True)]))
         if choice is None:
             return
-        self.hand_off("remove" if removing else "install", [p.name])
+        # nog 1.7 (F-11): install from the source of the row picked, so the AUR's
+        # neofetch is never swapped for a repository package providing "neofetch"
+        name = p.name if removing else (f"aur/{p.name}" if p.aur else f"{p.source}/{p.name}" if p.source else p.name)
+        self.hand_off("remove" if removing else "install", [name])
 
     def update_ticked(self) -> None:
         if self.keep_busy:
@@ -594,9 +597,9 @@ class NogForgeApp(ForgeApp):
         if self.run_in_terminal:
             after(self.run_in_terminal(cmd, env))
             return
-        targets = [n for n in names if not n.startswith("-")]
+        targets = [n.split("/", 1)[-1] for n in names if not n.startswith("-")]
         if "--promote" in names:
-            targets = [n for n in names[:names.index("--promote")] if not n.startswith("-")]
+            targets = [n.split("/", 1)[-1] for n in names[:names.index("--promote")] if not n.startswith("-")]
         title = {"install": f"Installing {' '.join(targets)}", "remove": f"Removing {' '.join(targets)}",
                  "update": f"Updating {len(targets)} package{'s' if len(targets) != 1 else ''}"
                  + (f": {', '.join(targets[:5])}" + (" …" if len(targets) > 5 else "") if targets else ""),
@@ -608,7 +611,7 @@ class NogForgeApp(ForgeApp):
 
     def _after_hand_off(self, action: str, names: list[str], code: int, before: dict, expected: dict,
                         kept: list[str]) -> None:
-        shown = "" if action == "update" else " ".join(names)
+        shown = "" if action == "update" else " ".join(n.split("/", 1)[-1] for n in names)
         self.changes.append((action, shown, code))
         word = {"install": "Installed", "remove": "Removed", "update": "Update finished",
                 "clean": "Clean-up finished", "promote": "Promoted", "pin": "Tier changed"}
