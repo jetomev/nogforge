@@ -80,3 +80,11 @@ Released at Javier's word ("push … to final versions … both nog and nogForge
 | Bottom bar per screen | fixed in forgekit 0.5.2 (installed 22:18) |
 
 Findings F-1…F-9: issues #2–#10, each opened and closed with its fix.
+
+## 10 · Javier's Update test (4 Oct, 3 ready · 69 held)
+
+| ID | Result |
+|---|---|
+| 8.4 untick | works, but slow to show and every click asked nog → **F-10 (#11)**, fixed: shown at once, quick clicks batched into one question |
+| 8.4 the waiting message | grey "asking nog…" → **F-11 (#12)**, fixed: yellow banner beside the update button, which waits in cream |
+| 8.5 promote · 8.6 update | pending |

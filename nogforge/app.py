@@ -64,6 +64,13 @@ PackageList:focus > .option-list--option-highlighted, RecordList:focus > .option
 .nf-top Button { margin: 0 2 0 0; }
 .nf-section { height: auto; margin: 1 0 0 0; }
 #up-summary { height: auto; }
+/* While nog works out your choices (Javier, 4 Oct): a yellow banner shaped like a button, and the
+   update button waits in a pale yellow beside it, so the two read as one message. */
+#up-busy { display: none; width: auto; height: 1; padding: 0 2; margin: 0 2 0 0;
+           background: $forge-warn; color: $forge-on-accent; text-style: $forge-strong; }
+#up-busy.-on { display: block; }
+.nf-top Button#up-run.-waiting, .nf-top Button#up-run.-waiting:hover, .nf-top Button#up-run.-waiting:disabled {
+    background: $nf-cream; color: $forge-on-accent; text-style: none; text-opacity: 100%; opacity: 100%; }
 .nf-log-panel { width: 96; height: auto; max-height: 90%; }
 #nl-body { height: auto; max-height: 55vh; overflow-x: auto; overflow-y: auto; }
 .nf-full-log { width: auto; }
@@ -138,6 +145,19 @@ class NogForgeApp(ForgeApp):
     SHOW_CHANGES_BAR = True
     CSS = NF_CSS
     LICENSE_NOTICE = GPL3_NOTICE
+
+    def get_css_variables(self) -> dict[str, str]:
+        """forgekit's roles, plus one of nogForge's own: cream, forgekit's yellow
+        made paler, for the update button while nog works (a plain yellow on a
+        text console, which has no in-between shades)."""
+        v = super().get_css_variables()
+        warn = v.get("forge-warn", "")
+        if warn.startswith("ansi_") or not warn:
+            v["nf-cream"] = "ansi_yellow"
+        else:
+            from textual.color import Color
+            v["nf-cream"] = Color.parse(warn).blend(Color(255, 255, 255), 0.55).hex
+        return v
     MENU = [
         {"id": "dashboard", "title": "Dashboard", "kind": "section"},
         {"id": "insystem", "title": "In-System", "kind": "section"},
@@ -199,6 +219,7 @@ class NogForgeApp(ForgeApp):
         self.promote: set[str] = set()       # what you promoted: ready now, with the ticked ones
         self.keep_plan: dict | None = None   # nog's plan with your choices: what must move or stay with them
         self.keep_busy = False
+        self._ask_timer = None               # the pause before nog is asked about your choices
         self.started = __import__("datetime").datetime.now()
         self.ABOUT = {
             "name": "nogForge", "version": __version__,
@@ -273,10 +294,39 @@ class NogForgeApp(ForgeApp):
 
     # ── Update's choices: nog decides what must move or stay together ───────
     def choice_plan(self) -> dict | None:
-        """The plan as it is with your choices (nog's answer), or nog's plain plan."""
+        """The plan as it is with your choices: nog's answer, or, while nog is
+        still working them out, your choices shown at once over the last answer."""
+        if self.keep_busy and self.plan is not None:
+            return self.shown_at_once()
         if (self.keep or self.promote) and self.keep_plan is not None:
             return self.keep_plan
         return self.plan
+
+    def shown_at_once(self) -> dict:
+        """Javier, 4 Oct: a tick changes on screen the moment you press it; nog's
+        answer follows. What you kept back or promoted moves now; what must stay
+        with it is still the last answer's, until nog says again."""
+        base, last = self.plan, self.keep_plan or self.plan
+        base_ready = {r["name"] for r in base["ready"]}
+        last_by = {r["name"]: r for r in last["ready"] + last["held"]}
+        last_ready = {r["name"] for r in last["ready"]}
+        partners = self.kept_partners()
+        ready, held = [], []
+        for r in base["ready"] + base["held"]:
+            n = r["name"]
+            if n in self.promote:
+                ready.append({**r, "note": "promoted by you"})
+            elif n in self.keep:
+                held.append({**r, "note": "kept back by you", "kept_back": True})
+            elif n in partners:
+                held.append(last_by[n])
+            elif n in base_ready:
+                ready.append({**r, "kept_back": False})
+            elif n in last_ready and last_by[n].get("note", "").removeprefix("promoted with ") in self.promote:
+                ready.append(last_by[n])
+            else:
+                held.append(r)
+        return {**base, "ready": ready, "held": held}
 
     def kept_partners(self) -> set[str]:
         """What nog holds because of what you kept back (not their own wait)."""
@@ -327,13 +377,24 @@ class NogForgeApp(ForgeApp):
         self.notify(f"{name} is ready now; it goes in with the ticked ones. Space unticks it again.",
                     title="Promoted", timeout=6)
 
+    ASK_AFTER = 0.6   # seconds of quiet before nog is asked: quick clicks go as one question
+
     def reload_choices(self) -> None:
+        """Shown at once; nog is asked once the clicking pauses, with every choice
+        made so far (Javier, 4 Oct: "if people go selecting quick, batch them")."""
+        if self._ask_timer is not None:
+            self._ask_timer.stop()
+            self._ask_timer = None
         self.keep_busy = bool(self.keep or self.promote)
         if not self.keep_busy:
             self.keep_plan = None
         self.refresh_screens()
         if self.keep_busy:
-            self.load_keep_plan(sorted(self.keep), sorted(self.promote))
+            self._ask_timer = self.set_timer(self.ASK_AFTER, self._ask_nog)
+
+    def _ask_nog(self) -> None:
+        self._ask_timer = None
+        self.load_keep_plan(sorted(self.keep), sorted(self.promote))
 
     @work(thread=True, exclusive=True, group="nf-keep")
     def load_keep_plan(self, keep: list[str], promote: list[str]) -> None:
@@ -395,6 +456,9 @@ class NogForgeApp(ForgeApp):
             self._switch_section("update")
 
     def check_updates(self) -> None:
+        if self._ask_timer is not None:
+            self._ask_timer.stop()
+            self._ask_timer = None
         self.keep, self.promote, self.keep_plan, self.keep_busy = set(), set(), None, False   # fresh choices
         self.plan, self.plan_error = None, ""
         self.refresh_screens()
@@ -477,6 +541,8 @@ class NogForgeApp(ForgeApp):
         self.hand_off("remove" if removing else "install", [p.name])
 
     def update_ticked(self) -> None:
+        if self.keep_busy:
+            return                              # nog is still working out your choices: the banner says so
         args = (["--keep", ",".join(sorted(self.keep))] if self.keep else []) + \
             (["--promote", ",".join(sorted(self.promote))] if self.promote else [])
         self.hand_off("update", args)

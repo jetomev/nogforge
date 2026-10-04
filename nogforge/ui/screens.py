@@ -403,6 +403,7 @@ class UpdateScreen(VerticalScroll, can_focus=False):
         with Horizontal(classes="forge-buttons nf-top"):
             yield Button("Check for Updates (k)", id="up-check")
             yield Button("Update the Ticked Ones (u)", id="up-run", variant="primary")
+            yield Static("", id="up-busy")
         yield Static("", id="up-summary")
         yield Static("[b]Ready now[/]  [$forge-muted]untick to keep one back: nog says what must stay back with it[/]",
                      classes="nf-section")
@@ -423,11 +424,20 @@ class UpdateScreen(VerticalScroll, can_focus=False):
         from ..nog import Package
         app, m = self.app, "$forge-muted"
         plan = app.choice_plan()
+        waiting = app.keep_busy or (plan is None and not app.plan_error)
+        busy = self.query_one("#up-busy", Static)
+        busy.set_class(waiting, "-on")
+        run = self.query_one("#up-run", Button)
+        run.set_class(waiting, "-waiting")
+        if waiting:
+            busy.update(f"{glyph('busy')} nog is working on it{glyph('ellipsis')}"
+                        if plan is not None else f"{glyph('busy')} nog is checking{glyph('ellipsis')}")
+            run.disabled = True
         if app.plan_error:
             self.query_one("#up-summary", Static).update(f"[$forge-warn]{glyph('warn')} {app.plan_error}[/]")
             return
         if plan is None:
-            self.query_one("#up-summary", Static).update(f"[{m}]Asking nog{glyph('ellipsis')}[/]")
+            self.query_one("#up-summary", Static).update("")
             return
 
         def pkg(r):
@@ -453,14 +463,13 @@ class UpdateScreen(VerticalScroll, can_focus=False):
         self.query_one("#up-held", PackageList).show(held)
         ticked = sum(1 for r in ready if r.tick)
         self.query_one("#up-run", Button).label = f"Update the Ticked Ones ({ticked}) (u)"
-        self.query_one("#up-run", Button).disabled = ticked == 0 and not plan.get("unknown")
+        run.disabled = waiting or (ticked == 0 and not plan.get("unknown"))
         unk = len(plan.get("unknown", []))
-        busy = f"   [{m}]asking nog{glyph('ellipsis')}[/]" if app.keep_busy else ""
         promoted = len(app.promote)
         self.query_one("#up-summary", Static).update(
             f"[b]{ticked} to update[/]" + (f" ({promoted} promoted)" if promoted else "") +
             f" · {len(ready) - ticked} kept back · {len(held)} held" +
-            (f" · {unk} nog will ask you about" if unk else "") + busy +
+            (f" · {unk} nog will ask you about" if unk else "") +
             f"\n[{m}]The update itself runs in the terminal: nog shows its plan and asks before anything "
             f"changes, and the password comes through the system's window.[/]")
 

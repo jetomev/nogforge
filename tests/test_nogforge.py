@@ -504,6 +504,8 @@ if "--json" in a:
         pk = [{**p, "version": state.get(p["name"], p["version"])} for p in d["list"]["packages"]]
         print(json.dumps({**d["list"], "packages": pk}))
     elif a[0] == "update":
+        if keep or promote:
+            open(os.environ["NOGFORGE_TEST_DATA"] + ".asked", "a").write(" ".join(a) + "\n")
         print(json.dumps(plan(keep, promote)[0]))
     sys.exit(0)
 log.write(" ".join(a) + "\n")
@@ -635,6 +637,51 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.4)
             self.assertEqual(app.keep, set())
             self.assertTrue(all(r.tick for r in ready.rows))
+
+    def asked(self) -> list[str]:
+        f = Path(str(self.data) + ".asked")
+        return f.read_text().splitlines() if f.exists() else []
+
+    async def test_a_tick_shows_at_once_and_the_banner_says_nog_is_working(self):
+        # Javier, 4 Oct: "make it look immediately while it's being executed in the back"
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            ready.focus()
+            pick(ready, "ldb")
+            await pilot.press("space")
+            await pilot.pause(0.05)
+            self.assertEqual(self.asked(), [], "nog not asked yet")
+            rows = {r.package.name: r for r in ready.rows}
+            self.assertEqual((rows["ldb"].tick, rows["ldb"].note), (False, "kept back by you"), "shown at once")
+            run, busy = app.query_one("#up-run"), app.query_one("#up-busy")
+            self.assertTrue(busy.has_class("-on") and busy.display, "the yellow banner")
+            self.assertIn("nog is working on it", str(busy.render()))
+            self.assertTrue(run.disabled and run.has_class("-waiting"), "Update waits, in pale yellow")
+            await pilot.press("u")
+            await pilot.pause(0.05)
+            self.assertEqual(self.ran(), [], "u does nothing while nog works")
+            self.assertTrue(await self.until(pilot, lambda: not app.keep_busy))
+            await pilot.pause(0.3)
+            self.assertFalse(busy.has_class("-on") or busy.display, "the banner goes when nog has answered")
+            self.assertFalse(run.disabled or run.has_class("-waiting"))
+            rows = {r.package.name: r for r in ready.rows}
+            self.assertEqual(rows["libwbclient"].note, "must stay back with ldb", "then nog's answer")
+
+    async def test_quick_clicks_go_to_nog_as_one_question(self):
+        # Javier, 4 Oct: "if people go deselecting or selecting quick, batch them"
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            ready.focus()
+            for name in ("ldb", "tzdata", "ldb"):                 # untick, untick, tick again: quickly
+                pick(ready, name)
+                await pilot.press("space")
+                await pilot.pause(0.1)
+            rows = {r.package.name: r for r in ready.rows}
+            self.assertEqual((rows["ldb"].tick, rows["tzdata"].tick), (True, False), "each click shown at once")
+            self.assertTrue(await self.until(pilot, lambda: not app.keep_busy))
+            self.assertEqual(self.asked(), ["update --keep tzdata --json"], "one question, with the last choices")
 
     async def test_a_click_on_the_box_unticks(self):
         # Javier's run: "I could not de-select a package that is ticked"
