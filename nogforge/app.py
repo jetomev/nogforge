@@ -42,12 +42,14 @@ NF_CSS = FORGE_CSS + """
 .nf-box-buttons { height: auto; padding: 1 0 0 0; align-horizontal: left; }
 .nf-box-buttons Button { margin: 0; width: auto; min-width: 0; padding: 0 2; }
 .nf-filters { height: auto; }
-.nf-bar { height: 3; margin: 0 0 0 0; }
+.nf-bar { height: 3; margin: 0 0 1 0; }
+.nf-bar.-last { margin: 0; }
+.nf-label.-lead { width: 9; padding: 0 1 0 1; }
 .nf-label { width: auto; height: 3; content-align: left middle; color: $forge-muted; padding: 0 1 0 1; }
-.nf-inline { width: auto; height: 3; align-vertical: middle; padding: 0 0 0 1; }
-.nf-inline Button { margin: 0; min-width: 0; width: auto; padding: 0 2; }
+.nf-inline { width: auto; height: 3; padding: 0 0 0 1; }
+.nf-inline Button { margin: 0; min-width: 0; width: auto; height: 3; padding: 0 2; content-align: center middle; }
 #is-find, #in-find { width: 1fr; }
-#is-show { width: 22; } #is-type, #in-type { width: 20; } #is-tier, #in-tier { width: 17; }
+#is-show { width: 19; } #is-type, #in-type { width: 18; } #is-tier, #in-tier { width: 17; }
 PackageHeader, .nf-head { height: 1; padding: 0 1; color: $forge-accent; margin: 1 0 0 0; }
 PackageList, RecordList { height: 1fr; border: solid $forge-field-border; background: $forge-bg; padding: 0; }
 PackageList:focus, RecordList:focus { border: solid $forge-accent; }
@@ -170,7 +172,8 @@ class NogForgeApp(ForgeApp):
         Binding("ctrl+d", "go('dashboard')", show=False), Binding("ctrl+i", "go('insystem')", show=False),
         Binding("ctrl+n", "go('install')", show=False), Binding("ctrl+u", "go('update')", show=False),
         Binding("u", "updates", show=False), Binding("r", "go('install')", show=False),
-        Binding("h", "go('activity')", show=False), Binding("c", "check_or_clean", show=False),
+        Binding("h", "go('activity')", show=False), Binding("c", "clean", show=False),
+        Binding("k", "check", show=False),
         Binding("p", "repositories", show=False),
         Binding("slash", "find", show=False),
         Binding("f1", "help_here", show=False, priority=True),
@@ -372,11 +375,15 @@ class NogForgeApp(ForgeApp):
             self._switch_section("install")
             self.query_one("#in-find").focus()
 
-    def action_check_or_clean(self) -> None:
-        if self.query_one("#forge-work").current == "sec-update":
-            self.check_updates()
-        elif self.query_one("#forge-work").current == "sec-dashboard":
-            self.hand_off("clean", [])
+    # Javier, 3 Oct: one letter, one meaning: "c" said "check again" on Update and
+    # cleaned up on the Dashboard. c is always Clean Up; k checks for updates.
+    def action_clean(self) -> None:
+        self.hand_off("clean", [])
+
+    def action_check(self) -> None:
+        if self.query_one("#forge-work").current != "sec-update":
+            self._switch_section("update")
+        self.check_updates()
 
     def action_updates(self) -> None:
         """u: open Update; on Update, update the ticked ones."""

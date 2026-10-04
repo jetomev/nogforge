@@ -384,7 +384,8 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.5)
                 for b in app.screen.query(Button):
                     if b.display and b.region.width:
-                        self.assertIn(str(b.label), b.render_line(0).text, f"screen {key}: {b.label!r} cut off")
+                        self.assertIn(str(b.label), b.render_line(b.size.height // 2).text,   # the label sits mid-button
+                                      f"screen {key}: {b.label!r} cut off")
                 for w in app.screen.query("*"):
                     if isinstance(w, Input):
                         continue
@@ -625,9 +626,22 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertIn("1 updated", text)
             self.assertIn("Kept back by you: ldb, libwbclient", text)
             self.assertFalse(app.screen.query("#restart"), "no kernel: no restart offered")
-            await pilot.press("c")
+            await pilot.press("l")
             await pilot.pause(0.3)
             self.assertFalse(app.restarted)
+
+    async def test_c_always_cleans_up_k_checks_for_updates(self):
+        # Javier, 3 Oct: "c" said "check again" on Update and cleaned up on the Dashboard: confusing
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await self.open_update(app, pilot)
+            await pilot.press("k")
+            await pilot.pause(0.1)
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None), "k asked nog again")
+            self.assertEqual(self.ran(), [], "checking changes nothing")
+            await pilot.press("c")
+            self.assertTrue(await self.until(pilot, lambda: bool(self.ran())))
+            self.assertTrue(self.ran()[0].startswith("clean"), "c is clean up on Update too")
 
     async def test_promote_makes_it_ready_then_the_update_takes_it(self):
         # Javier, 3 Oct: "shouldn't promote just bring the package to due, so it enters the ready list?"

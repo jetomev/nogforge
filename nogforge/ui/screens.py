@@ -142,15 +142,16 @@ class FilterBar(Vertical):
     def compose(self) -> ComposeResult:
         p = self.prefix
         with Horizontal(classes="nf-bar"):
-            yield Static("Search", classes="nf-label")
+            yield Static("Search", classes="nf-label -lead")
             yield SearchInput(placeholder="a name or what it does", id=f"{p}-find")
             with Horizontal(classes="forge-buttons nf-inline"):
                 yield Button(search_label(), id=f"{p}-go", variant="primary")
-        with Horizontal(classes="nf-bar"):
+        with Horizontal(classes="nf-bar -last"):
+            # Javier, 3 Oct: the boxes line up on the left: the first label of each line is one width
             if self.with_show:
-                yield Static("Show", classes="nf-label")
+                yield Static("Show", classes="nf-label -lead")
                 yield Select([("Yours", "yours"), ("All", "all")], value="yours", allow_blank=False, id=f"{p}-show")
-            yield Static("Type", classes="nf-label")
+            yield Static("Type", classes="nf-label" if self.with_show else "nf-label -lead")
             yield Select([(t, t) for t in catalogue.TYPES], value="All types", allow_blank=False, id=f"{p}-type")
             yield Static("Tier", classes="nf-label")
             yield Select(TIERS, value="0", allow_blank=False, id=f"{p}-tier")
@@ -394,12 +395,12 @@ class InstallScreen(Vertical):
 
 # ── Update: choose what goes in; nog says what must stay together ────────────
 class UpdateScreen(VerticalScroll, can_focus=False):
-    FORGE_HINTS = [("Space", "tick / untick"), ("Enter", "promote (Held)"), ("c", "check again"),
+    FORGE_HINTS = [("Space", "tick / untick"), ("Enter", "promote (Held)"), ("k", "check for updates"), ("c", "clean up"),
                    ("u", "update"), ("F1", "help")]
 
     def compose(self) -> ComposeResult:
         with Horizontal(classes="forge-buttons nf-top"):
-            yield Button("Check for Updates (c)", id="up-check")
+            yield Button("Check for Updates (k)", id="up-check")
             yield Button("Update the Ticked Ones (u)", id="up-run", variant="primary")
         yield Static("", id="up-summary")
         yield Static("[b]Ready now[/]  [$forge-muted]untick to keep one back: nog says what must stay back with it[/]",

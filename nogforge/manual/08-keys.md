@@ -6,7 +6,8 @@
 | **u** | open Update · on Update: update the ticked ones |
 | **r** | review packages (Install) |
 | **h** | open History (Activity) |
-| **c** | check for updates (Update) · clean up (Dashboard) |
+| **c** | clean up old downloads (asks first) |
+| **k** | check for updates |
 | **p** | Repositories (In-System, Install) |
 | **/** | search |
 | **Space** | tick or untick an update |

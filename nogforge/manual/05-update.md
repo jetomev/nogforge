@@ -17,7 +17,7 @@ The wait exists to catch a version that turns out to be broken, so promote what 
 
 ## Updating
 
-**Update the Ticked Ones (u)** hands the run to nog in the terminal, with what you kept back and what you promoted: nog shows its full plan and asks before anything changes, and the password comes through the system's window. **Check for Updates (c)** asks nog again and starts your choices fresh.
+**Update the Ticked Ones (u)** hands the run to nog in the terminal, with what you kept back and what you promoted: nog shows its full plan and asks before anything changes, and the password comes through the system's window. **Check for Updates (k)** asks nog again and starts your choices fresh.
 
 ## What changed
 

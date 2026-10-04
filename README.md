@@ -87,7 +87,8 @@ nogForge isn't on the AUR yet: it stays a beta until everything in the design is
 | Enter | the row's option: install, remove, promote, or change its tier |
 | Del | remove the selected package (Home) |
 | / | find |
-| c | check for updates (Update) · clean up (Dashboard) |
+| c | clean up old downloads (asks first) |
+| k | check for updates |
 | F1 | help on this screen |
 | ? | all keys |
 | q | quit |
