@@ -21,7 +21,9 @@
 - [x] **Javier's first run (3 Oct 12:15–12:40)** — "a work of art"; findings F-1…F-7 and his changes, all done (matrix §7): In-System, Install, one filter bar (Search + 🔍 button, Show, Type, Tier, Repositories window), Repository column, button-look options with hover, Tiers removed, History ▾ Activity / nog Logs (log window), Promote = ready not install (nog 1.6.0-rc.2 `--promote`), unticking fixed, search ranked (no perl for "calc"), clicks on a row only select. 30 tests; console clean on every screen.
 - [x] **Second run (3 Oct evening)** — 8.1 rc.3 pass; In-System, Install, Update "good". Fixed after: a row of space under the Search line, boxes lined up on the left, buttons as tall as the boxes; **c is always Clean Up, k checks for updates** ("c check again" was confusing). 31 tests.
 - [ ] **Tomorrow (Javier):** Update ticks/unticks/promote once updates are ready again (8.4–8.6).
-- [ ] **Decide with Javier:** nog Logs = nog's full output of each run as a `.log` file (his idea, 3 Oct) instead of the CSV lines.
+- [x] **nog Logs shows each run whole (3 Oct)** — Javier's idea; nog 1.6.0-rc.4 keeps every run as a `.log` (30 days, nog #42); Enter opens it; older runs fall back to the CSV lines.
+- [x] **Bottom bar kept the last screen's keys** (Javier, 3 Oct) — a forgekit bug, in all four apps; fixed in forgekit `8f14c39` (needs forgekit 0.5.2 on the AUR for installed apps). Dashboard bar now names c clean up.
+- [ ] **At release:** issues for F-1…F-7 and the second-run fixes (release rule: every finding gets an issue).
 - [ ] **Ask Javier:** release as one beta (0.3.0) after his run, or 0.1 first? Title still says 0.1.0.
 - [ ] **Javier's run**: `testing/20261003 - Test Matrix for nogForge v0-1-0.md` §6 (includes 6.8b–d for choices and Tiers).
 - [ ] **0.4 Settings — not started on purpose:** it writes /etc files (nog.conf holds, pacman.conf, repositories with key trust). nog has no command for those yet; it needs either nog commands (`nog config …`, `nog repo add/remove`) or a grubForge-style privileged helper. A design question for Javier, and security-sensitive.

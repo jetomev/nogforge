@@ -104,6 +104,49 @@ class Detail:
         return t
 
 
+def full_log_for(run: Run, folder: Path = LOGS) -> Path | None:
+    """The run's whole output as nog 1.6 keeps it, ``<YYYYMMDD-HHMMSS> <command>.log``
+    (Javier, 3 Oct: "read the full run"). The file is named when the run STARTS
+    and the runs line written when it ENDS, so: the newest log of that command
+    that started after the previous run ended and before this one did."""
+    earlier = [r.when for r in runs(folder, limit=10_000) if r.when < run.when]
+    since = max(earlier) if earlier else None
+    first = (run.command.split() or [""])[0]
+    best = None
+    for f in folder.glob("*.log"):
+        stamp, _, rest = f.name.partition(" ")
+        try:
+            started = datetime.strptime(stamp, "%Y%m%d-%H%M%S")
+        except ValueError:
+            continue
+        if rest.split(" ")[0].removesuffix(".log") != first:
+            continue
+        # the runs line keeps minutes only: it can read a few seconds before the start
+        if started.replace(second=0) <= run.when and (since is None or started >= since):
+            if best is None or started > best[0]:
+                best = (started, f)
+    return best[1] if best else None
+
+
+def read_full_log(path: Path) -> str:
+    """The log as the screen showed it: `script`'s own first and last lines
+    dropped, and a line redrawn in place (a progress bar) kept as it ended."""
+    try:
+        raw = path.read_bytes().decode("utf-8", "replace")
+    except OSError as e:
+        return f"(could not read {path}: {e})"
+    lines = raw.split("\n")
+    if lines and lines[0].startswith("Script started on"):
+        lines = lines[1:]
+    while lines and (not lines[-1].strip() or lines[-1].startswith("Script done on")):
+        lines.pop()
+    out = []
+    for line in lines:
+        parts = [p for p in line.split("\r") if p]
+        out.append(parts[-1] if parts else "")
+    return "\n".join(out)
+
+
 def details_for(run: Run, folder: Path = LOGS) -> list[Detail]:
     """nog's other logs for one run. nog writes the run's line when it ENDS
     (an update at 13:00) and its package lines as they happen (12:43), so a

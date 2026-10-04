@@ -534,6 +534,40 @@ CHOICE_PLAN = {"nog": "1.6.0", "kind": "plan", "sources": {}, "unknown": [],
                          "kept_back": False, "coupled_to": None}]}
 
 
+class FullLogs(unittest.TestCase):
+    """nog 1.6 keeps each run whole as a .log; nogForge finds and shows it."""
+
+    def test_the_runs_own_log_is_found_and_read_as_the_screen_showed_it(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "20261003 nog-runs.csv").write_text(
+                "date,time,user,command,status,outcome\n"
+                "10/03/2026,09:16 PM,j,install /x/nog-rc2.pkg.tar.zst,0,done\n"
+                "10/03/2026,09:27 PM,j,install /x/nog-rc3.pkg.tar.zst,0,done\n"
+                "10/03/2026,09:37 PM,j,clean,0,done\n")
+            (d / "20261003-211604 install nog-rc2.pkg.tar.zst.log").write_text(
+                "Script started on 2026-10-03 21:16:04 [COMMAND=x]\nnog v1.6\r\n 10%\r 100%\r\ndone\r\n\n"
+                "Script done on 2026-10-03 21:17:40 [COMMAND_EXIT_CODE=\"0\"]\n")
+            (d / "20261003-212650 install nog-rc3.pkg.tar.zst.log").write_text("rc3 run\n")
+            (d / "20261003-213700 clean.log").write_text("clean run\n")
+            rs = {r.command.split()[-1]: r for r in records.runs(d)}
+            self.assertEqual(records.full_log_for(rs["/x/nog-rc2.pkg.tar.zst"], d).name,
+                             "20261003-211604 install nog-rc2.pkg.tar.zst.log")
+            self.assertEqual(records.full_log_for(rs["/x/nog-rc3.pkg.tar.zst"], d).name,
+                             "20261003-212650 install nog-rc3.pkg.tar.zst.log", "not the earlier install's")
+            self.assertEqual(records.full_log_for(rs["clean"], d).name, "20261003-213700 clean.log",
+                             "started in the same minute its line was written")
+            text = records.read_full_log(d / "20261003-211604 install nog-rc2.pkg.tar.zst.log")
+            self.assertEqual(text, "nog v1.6\n 100%\ndone", "script's lines dropped; a redrawn line as it ended")
+
+    def test_a_run_from_before_nog_1_6_has_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "20261002 nog-runs.csv").write_text("date,time,user,command,status,outcome\n"
+                                                     "10/02/2026,04:52 PM,j,install grubforge,0,done\n")
+            self.assertIsNone(records.full_log_for(records.runs(d)[0], d))
+
+
 class Choices(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         import subprocess

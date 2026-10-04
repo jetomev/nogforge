@@ -14,11 +14,12 @@ import re
 from collections import Counter
 from pathlib import Path
 
+from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
+from textual.containers import Grid, Horizontal, ScrollableContainer, Vertical, VerticalScroll
 from textual.message import Message
 from textual.widgets import Button, Input, OptionList, Select, Static
 from textual.widgets.option_list import Option
@@ -200,7 +201,7 @@ class FilterBar(Vertical):
 
 # ── Dashboard ────────────────────────────────────────────────────────────────
 class DashboardScreen(VerticalScroll, can_focus=False):
-    FORGE_HINTS = [("u", "updates"), ("r", "packages"), ("1-6", "screens"), ("F1", "help"), ("?", "all keys")]
+    FORGE_HINTS = [("u", "updates"), ("r", "packages"), ("c", "clean up"), ("1-6", "screens"), ("F1", "help"), ("?", "all keys")]
 
     def compose(self) -> ComposeResult:
         with Grid(id="nf-dash"):
@@ -577,27 +578,35 @@ class NogLogsScreen(Vertical):
     def _open(self, e: RecordList.Open) -> None:
         e.stop()
         run = self.app.runs[e.index]
-        self.app.push_screen(LogDialog(run, records.details_for(run, self.app.logs)))
+        self.app.push_screen(LogDialog(run, records.details_for(run, self.app.logs),
+                                       records.full_log_for(run, self.app.logs)))
 
 
 class LogDialog(ForgeModal[None]):
     """One run's full log: what nog wrote for it, line by line."""
 
-    def __init__(self, run: records.Run, details: list) -> None:
+    def __init__(self, run: records.Run, details: list, full: Path | None = None) -> None:
         super().__init__()
-        self.run, self.details = run, details
+        self.run, self.details, self.full = run, details, full
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="forge-panel nf-log-panel"):
             yield Static(f"nog {self.run.command}", classes="forge-panel-title")
             yield Static(f"[$forge-muted]{self.run.when:%b %-d, %Y %H:%M} · {self.run.user} · status "
                          f"{self.run.status or '—'} · {self.run.outcome or '—'}[/]")
-            with VerticalScroll(id="nl-body"):
-                if not self.details:
-                    yield Static("[$forge-muted]nog wrote no other log for this run: the line above is all of it.[/]")
-                for d in self.details:
-                    yield Static(f"[b]{d.kind}[/]  [$forge-muted]{d.path}[/]")
-                    yield Static(d.table(colours(self.app)))
+            with ScrollableContainer(id="nl-body"):
+                if self.full is not None:
+                    # nog 1.6: the whole run, as it was on screen (colours too)
+                    yield Static(f"[$forge-muted]{escape(str(self.full).replace(str(Path.home()), '~'))}[/]")
+                    yield Static(Text.from_ansi(records.read_full_log(self.full), no_wrap=True),
+                                 classes="nf-full-log")
+                elif not self.details:
+                    yield Static("[$forge-muted]nog kept no other log for this run: the line above is all of it. "
+                                 "(nog 1.6 keeps every run whole.)[/]")
+                else:
+                    for d in self.details:
+                        yield Static(f"[b]{d.kind}[/]  [$forge-muted]{d.path}[/]")
+                        yield Static(d.table(colours(self.app)))
             with Horizontal(classes="forge-buttons forge-panel-footer"):
                 yield Button("Close (c)", id="nl-close", variant="primary")
 

@@ -65,7 +65,8 @@ PackageList:focus > .option-list--option-highlighted, RecordList:focus > .option
 .nf-section { height: auto; margin: 1 0 0 0; }
 #up-summary { height: auto; }
 .nf-log-panel { width: 96; height: auto; max-height: 90%; }
-#nl-body { height: auto; max-height: 70vh; }
+#nl-body { height: auto; max-height: 55vh; overflow-x: auto; overflow-y: auto; }
+.nf-full-log { width: auto; }
 #nf-changed-msg { height: auto; padding: 0 0 1 0; }
 """
 
