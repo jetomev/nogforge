@@ -4,6 +4,11 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## v1.1.1 — the AUR build works from a terminal · F-13 #15
+- [x] Javier's AUR install of 1.1.0 failed in check(): a test's stand-in decided "in the run window" by `isatty(0)`; yay builds in a terminal. Fixed (NOG_EVENTS; stdin=DEVNULL); make-rc-packages.sh now builds under `script` (with a terminal, like yay)
+- [x] Released 1.1.1: tag, GitHub Latest, AUR `7da3a19` (built under a terminal before the push: 37 tests)
+- [ ] Javier installs it from the AUR (`nog install nogforge`) → close #15
+
 ## Done · v1.1.0 — nog runs inside nogForge · released 2026-10-04 (#14)
 - [x] Research (`docs/research/2026-10-04-nog-inside-the-ui.md`); Javier chose 1 (terminal pane + password in the app), 2 (steps view), 3 (grubForge's polkit box)
 - [x] Built on forgekit 0.6.0 (RunWindow, PasswordBridge) and nog 1.7.0 (NOG_EVENTS, `repo/name`); installs name the row's source; 37 tests
