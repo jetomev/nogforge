@@ -2,6 +2,18 @@
 
 *Newest first. The README carries the two most recent releases; older ones are here.*
 
+### v1.0.0 — October 4, 2026 · first stable release
+
+Javier's Update test on the desktop (untick, promote, update), then his call: *"publish nogForge 1.0.0. We can do that."* Needs [nog 1.6.1](https://github.com/jetomev/nog/releases/tag/v1.6.1). On the [AUR](https://aur.archlinux.org/packages/nogforge) from this version.
+
+- **A tick changes at once** ([F-10, #11](https://github.com/jetomev/nogforge/issues/11)). Before, it waited about 3 seconds for nog's answer, and every click asked nog again. Now quick clicks go to nog as one question.
+- **A yellow "nog is working on it…" sign** beside the update button, which waits in cream until nog answers ([F-11, #12](https://github.com/jetomev/nogforge/issues/12)).
+- **The update hands nog only the ticked ones, by name** (with nog 1.6.1, [nog#44](https://github.com/jetomev/nog/issues/44)): nog shows and installs just those, and refuses a held one that wasn't promoted.
+- **A finished update no longer says "nog stopped"** ([F-12, #13](https://github.com/jetomev/nogforge/issues/13)).
+- Out of beta: no "beta" in the title, a man page (`man nogforge`).
+
+Tested by Javier on the desktop: `update vde2 wolfssl`, then git promoted with `update freerdp git --promote git`: *"exactly what was described!"* ([testing/](../testing/)). Tests: 33 → 36.
+
 ### v0.3.0 — October 3, 2026 · first beta
 
 The design approved on 3 October, built the same morning, then reworked after Javier's two runs on the desktop the same day (*"This is a work of art my friend"*). Needs [nog 1.6.0](https://github.com/jetomev/nog/releases/tag/v1.6.0).

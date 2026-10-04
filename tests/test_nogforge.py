@@ -518,7 +518,9 @@ ev = os.environ.get("NOG_EVENTS")
 def event(**e):
     if ev:
         open(ev, "a").write(json.dumps(e) + "\n")
-if os.isatty(0):                     # inside nogForge's run window: behave like nog 1.7
+if ev:                               # inside nogForge's run window (it alone sets NOG_EVENTS): behave like nog 1.7
+    # (1.1.1: this asked os.isatty(0); built by yay in a terminal, the older tests'
+    # stand-in then believed it was in the run window and crashed: the AUR build failed)
     event(ev="steps", steps=[{"id": "check", "label": "Checking for updates"}, {"id": "pacman", "label": "Official packages"}])
     event(ev="step", id="check", state="done", detail="stand-in")
     sys.stdout.write("nog: Begin the handoff? [Y/n] "); sys.stdout.flush()
@@ -619,7 +621,8 @@ class Choices(unittest.IsolatedAsyncioTestCase):
     def app(self):
         from nogforge.app import NogForgeApp
         a = NogForgeApp(apps={}, logs=self.dir / "logs", cache_dir=self.dir)
-        a.run_in_terminal = lambda cmd, env: self.subprocess.run(cmd, env=env).returncode
+        # no keyboard for the stand-in, wherever the tests run (a terminal or not)
+        a.run_in_terminal = lambda cmd, env: self.subprocess.run(cmd, env=env, stdin=self.subprocess.DEVNULL).returncode
         a.restarted = False
         a.restart = lambda: setattr(a, "restarted", True)
         return a

@@ -6,7 +6,7 @@
 ![Platform: KognogOS / Arch](https://img.shields.io/badge/Platform-KognogOS%20%2F%20Arch-lightgrey.svg)
 ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)
 ![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen.svg)
-![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-purple.svg)
+![Version: 1.1.1](https://img.shields.io/badge/Version-1.1.1-purple.svg)
 [![AUR](https://img.shields.io/aur/version/nogforge?color=1793d1&label=AUR)](https://aur.archlinux.org/packages/nogforge)
 
 ---
@@ -120,6 +120,10 @@ python3 nogforge/main.py
 
 ## Changelog
 
+### v1.1.1 — October 4, 2026 · the AUR build works from a terminal
+
+The 1.1.0 AUR package didn't build on Javier's computer: three tests failed inside yay ([F-13, #15](https://github.com/jetomev/nogforge/issues/15)). The app itself was fine; a test's stand-in for nog decided "am I inside nogForge's run window?" by checking for a terminal. Our own builds had none; yay's build has one. The stand-in now goes by nog's steps file, the older tests never give it a keyboard, and our test builds now run with a terminal attached, the way yay does. Tests: 37, passing with and without a terminal.
+
 ### v1.1.0 — October 4, 2026 · nog works inside nogForge
 
 Javier, an hour after 1.0.0: *"nog running outside the UI. It is not beautiful, it is disrupting"*, and the password belongs in the app, also on a text console. Five options were researched ([docs/research](docs/research/2026-10-04-nog-inside-the-ui.md)); he chose three, all in this release ([#14](https://github.com/jetomev/nogforge/issues/14)). Needs [nog 1.7.0](https://github.com/jetomev/nog/releases/tag/v1.7.0) and [forgekit 0.6.0](https://github.com/jetomev/forgekit/releases/tag/v0.6.0).
@@ -130,18 +134,6 @@ Javier, an hour after 1.0.0: *"nog running outside the UI. It is not beautiful, 
 - The review window's **Install (i)** / **Remove (r)** now answer to their key (found on the text console; fixed in forgekit for every app).
 
 Tested in the KognogOS VM on a real text console (installs from the repositories and the AUR, an update with steps, a cancelled password, a removal), then by Javier on his desktop and tty3: *"wow! better than expected!"*, *"works wonders"* ([testing/](testing/20261004%20-%20Test%20Matrix%20for%20nogForge%20v1-1-0.md)). Tests: 36 → 37.
-
-### v1.0.0 — October 4, 2026 · first stable release
-
-Javier's Update test on the desktop (untick, promote, update), then his call: *"publish nogForge 1.0.0. We can do that."* Needs [nog 1.6.1](https://github.com/jetomev/nog/releases/tag/v1.6.1). On the [AUR](https://aur.archlinux.org/packages/nogforge) from this version.
-
-- **A tick changes at once** ([F-10, #11](https://github.com/jetomev/nogforge/issues/11)). Before, it waited about 3 seconds for nog's answer, and every click asked nog again. Now quick clicks go to nog as one question.
-- **A yellow "nog is working on it…" sign** beside the update button, which waits in cream until nog answers ([F-11, #12](https://github.com/jetomev/nogforge/issues/12)).
-- **The update hands nog only the ticked ones, by name** (with nog 1.6.1, [nog#44](https://github.com/jetomev/nog/issues/44)): nog shows and installs just those, and refuses a held one that wasn't promoted.
-- **A finished update no longer says "nog stopped"** ([F-12, #13](https://github.com/jetomev/nogforge/issues/13)).
-- Out of beta: no "beta" in the title, a man page (`man nogforge`).
-
-Tested by Javier on the desktop: `update vde2 wolfssl`, then git promoted with `update freerdp git --promote git`: *"exactly what was described!"* ([testing/](testing/)). Tests: 33 → 36.
 
 *Earlier versions: [docs/CHANGELOG.md](docs/CHANGELOG.md).*
 

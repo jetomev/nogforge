@@ -30,6 +30,10 @@ WORK="$(mktemp -d)"
 trap 'rm -rf --one-file-system "$WORK"' EXIT
 mkdir -p "$OUT"
 
+# 1.1.1: build the way yay does, with a terminal attached (util-linux script).
+# nogForge 1.1.0's tests passed here without one and failed in Javier's yay build.
+in_a_terminal() { script -qec "$*" /dev/null </dev/null; }
+
 ver_of() { sed -n 's/^__version__ = "\([0-9.]*\).*/\1/p' "$1"; }
 fk_ver="$(ver_of "$FK/forgekit/__init__.py")rc$rc"
 gf_ver="$(ver_of "$GF/grubforge/__init__.py")rc$rc"
@@ -68,19 +72,19 @@ cp "$NOG"/dist-rc/nog-*rc"$rc"-1-x86_64.pkg.tar.zst "$OUT/"
 echo; echo "=== python-forgekit $fk_ver"
 d="$WORK/forgekit"; rc_recipe ~/Programs/aur-python-forgekit forgekit "$fk_ver" "$d"
 git -C "$FK" archive --prefix="forgekit-$fk_ver/" -o "$d/forgekit-$fk_ver.tar.gz" HEAD
-(cd "$d" && PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
+(cd "$d" && in_a_terminal PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
 mkdir -p "$WORK/fk-src" && tar -C "$WORK/fk-src" -xzf "$d/forgekit-$fk_ver.tar.gz"
 export PYTHONPATH="$WORK/fk-src/forgekit-$fk_ver"   # the apps' checks use the forgekit being packaged
 
 echo; echo "=== grubforge $gf_ver"
 d="$WORK/grubforge"; rc_recipe ~/Programs/aur-grubforge grubforge "$gf_ver" "$d"
 git -C "$GF" archive --prefix="grubforge-$gf_ver/" -o "$d/grubforge-$gf_ver.tar.gz" HEAD
-(cd "$d" && PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
+(cd "$d" && in_a_terminal PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
 
 echo; echo "=== nogforge $nf_ver"
 d="$WORK/nogforge"; rc_recipe ~/Programs/aur-nogforge nogforge "$nf_ver" "$d"
 git -C "$NF" archive --prefix="nogforge-$nf_ver/" -o "$d/nogforge-$nf_ver.tar.gz" HEAD
-(cd "$d" && PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
+(cd "$d" && in_a_terminal PKGDEST="$OUT" makepkg -f --nodeps --noconfirm)
 
 echo
 ls -l "$OUT"
