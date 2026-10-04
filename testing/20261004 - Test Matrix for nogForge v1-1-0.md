@@ -34,8 +34,8 @@ four packages and asks; your password once). Log: `nogforge/logs/install-rc-late
 | 2.2 | answer **y** | nogForge's own password box (not KDE's window); then pacman's question with Yes/No, its table in view || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
 | 2.3 | finish, **Close** | "Updated."; What changed; no "nog stopped" || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
 | 2.4 | **F12** during a run | nog's own screen opens/folds || **PASS** (12:20) — `update leancrypto lib32-pcre2 pcre2`, all three in (1.9.1, 10.49), exit 0. Javier: *"wow! better than expected!"* |
-| 2.5 | **3** Install, search, **Enter** on a row, **i** | the review answers to **i**; same window, password, Yes; "Installed." | |
-| 2.6 | an install, then **Esc** on the password box | "nog stopped (status 1)", nog's screen open, nothing changed | |
+| 2.5 | **3** Install, search, **Enter** on a row, **i** | the review answers to **i**; same window, password, Yes; "Installed." || **PASS** (12:23) — `install extra/cowsay` (the row's own source, nog F-11), the review answered to **i**, cowsay 3.8.4 in. An earlier attempt at 12:22 stopped (status 1): asked Javier whether that was on purpose. Javier: *"it went as expected!"* |
+| 2.6 | an install, then **Esc** on the password box | "nog stopped (status 1)", nog's screen open, nothing changed || **PASS** (12:23) — `install extra/sl`, Esc on the password box: stopped (status 1), sl not installed. Javier: *"it went as expected!"* |
 | 2.7 | `grubforge`, Backups, **Back up now (N)** | grubForge's own password box (not KDE's window); a backup appears | |
 | 2.8 *(optional)* | **Ctrl+Alt+F3**, log in, `nogforge` and `grubforge` | the same boxes on the text console; **Ctrl+Alt+F1/F2** back to the desktop | |
 | 2.9 | anything that looks or feels wrong | a finding | |
