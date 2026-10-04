@@ -7,7 +7,7 @@ nog's update plan, and your choices:
 
 ## Keeping one back
 
-**Space** (or a click on its box) unticks a ready row: it says **kept back by you**. nog then works out what has to stay back with it, because some packages only work at matching versions, and those rows untick themselves with the reason (*must stay back with ldb*). Ticking one of those ticks the one it waits for again. Updating some packages but not their partners can break a system; nog never lets that happen.
+**Space** (or a click on its box) unticks a ready row: it says **kept back by you**, at once. A yellow **nog is working on it…** sign appears beside the update button, which waits in cream until nog answers; quick clicks are sent to nog together. nog then works out what has to stay back with it, because some packages only work at matching versions, and those rows untick themselves with the reason (*must stay back with ldb*). Ticking one of those ticks the one it waits for again. Updating some packages but not their partners can break a system; nog never lets that happen.
 
 ## Promote
 
@@ -17,7 +17,7 @@ The wait exists to catch a version that turns out to be broken, so promote what 
 
 ## Updating
 
-**Update the Ticked Ones (u)** hands the run to nog in the terminal, with what you kept back and what you promoted: nog shows its full plan and asks before anything changes, and the password comes through the system's window. **Check for Updates (k)** asks nog again and starts your choices fresh.
+**Update the Ticked Ones (u)** hands nog exactly the ticked ones, by name, in the terminal: nog shows only those and asks before anything changes, and the password comes through the system's window. pacman then lists each package it skips (the held ones); nog says so first. A held package goes in only when promoted. **Check for Updates (k)** asks nog again and starts your choices fresh.
 
 ## What changed
 

@@ -1,0 +1,135 @@
+.\" nogforge.1 — nogForge man page
+.\" GNU GPL v3 — see LICENSE
+.TH NOGFORGE 1 "October 2026" "nogForge v1.0.0" "User Commands"
+.
+.SH NAME
+nogforge \- packages the KognogOS way: what is installed, installing, and updates, in a terminal
+.
+.SH SYNOPSIS
+.B nogforge
+.br
+.B nogforge \-\-version
+.br
+.B nogforge \-\-help
+.
+.SH DESCRIPTION
+.B nogForge
+is a keyboard-driven terminal application for the packages on KognogOS and
+Arch Linux, built on
+.BR nog (1),
+the tier-aware package manager. Every package has a tier, and a new version
+waits before it installs (30 days for the kernel and its kind, 15 for the
+desktop, 7 for the rest).
+.PP
+nog decides; nogForge shows it. Tiers, holds, the day a hold ends and which
+packages must move together come from nog
+.RB ( "nog list \-\-json" ,
+.BR "nog search \-\-json" ,
+.BR "nog update \-\-json" )
+and are never worked out a second time.
+.PP
+A change (install, remove, update, clean up) is reviewed first, then handed
+to nog in the terminal: pacman shows exactly what comes with it and asks
+before anything changes. The password goes to the system's own password
+window when there is one
+.RB ( "sudo \-A" ,
+for example
+.BR ksshaskpass (1));
+on a text console nog asks for it in the terminal. nogForge never sees it.
+.PP
+System packages are protected: Tier 1, Arch's
+.B base
+set and anything another package needs cannot be removed; the reason is
+shown instead.
+.PP
+The full manual is inside the application (press
+.BR F1 )
+and in
+.I /usr/lib/nogforge/nogforge/manual/
+as Markdown.
+.
+.SH OPTIONS
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.B \-\-help
+Print the usage and exit.
+.
+.SH SCREENS
+.TP
+.B 1 \- Dashboard
+Updates per source and tier, your packages per source and tier, the last
+things nog did, and the space old downloads take.
+.TP
+.B 2 \- In-System
+What is on this computer: badge, name, version, tier, repository, and a
+Remove button; locked rows say why.
+.TP
+.B 3 \- Install
+Search the repositories and the AUR, best matches first, and install.
+.TP
+.B 4 \- Update
+nog's plan with your choices. Untick an update to keep it back (nog says
+what must stay back with it); Promote makes a held one ready now. The ticked
+ones are handed to nog by name
+.RB ( "nog update a b c \-\-promote x" ),
+so only they go in. Afterwards, What changed compares versions before and
+after, and after a new kernel offers a restart.
+.TP
+.B 5 \- Activity, 6 \- nog Logs
+Everything nog ran, in plain words, and nog's own logs; Enter opens a run
+whole, as it appeared on screen.
+.
+.SH KEYS
+.TP
+.B 1 \- 6
+Change screen.
+.TP
+.B u
+Open Update; on Update, update the ticked ones.
+.TP
+.B k
+Check for updates.
+.TP
+.B c
+Clean up old downloads (asks first).
+.TP
+.B Space
+Tick or untick an update.
+.TP
+.B Enter
+The row's option: install, remove, promote; on nog Logs, open the run.
+.TP
+.BR / ,\  p
+Search; the Repositories window.
+.TP
+.BR F1 ,\  ? ,\  q
+Help on this screen; every key; quit.
+.
+.SH FILES
+.TP
+.I ~/.local/share/nogforge/logs/YYYYMMDD nogforge-runs.csv
+One line per session, written when nogForge closes.
+.TP
+.I ~/.local/share/nog/logs/
+nog's own logs, read by History.
+.
+.SH REQUIREMENTS
+nog 1.6.1 or newer, python-forgekit 0.5.2 or newer, python-textual,
+python-rich. Optional: archlinux-appstream-data (app names and badges), a
+password window for
+.BR "sudo \-A" .
+.
+.SH SEE ALSO
+.BR nog (1),
+.BR pacman (8),
+.BR grubforge (1),
+.BR alacrittyforge (1)
+.
+.SH AUTHORS
+Javier (jetomev): idea, direction, testing.
+.br
+Claude (Anthropic): co-developer, architecture, implementation.
+.PP
+https://github.com/jetomev/nogforge

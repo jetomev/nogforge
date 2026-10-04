@@ -2,7 +2,7 @@
 
 nogForge is KognogOS's package app: your installed programs, searching and installing new ones, and updates, in plain words. It works with **nog**, KognogOS's package manager, and shows what nog decides: which tier a package is in, when an update is ready, and what must stay together. nogForge never decides those itself.
 
-This is a **beta**. It has the Dashboard, In-System, Install, Update (with your choices) and History. Settings come in the next beta, and Flatpak and Snap installs after that.
+It has the Dashboard, In-System, Install, Update (with your choices) and History. Settings come next, and Flatpak and Snap installs after that.
 
 ## The screens
 

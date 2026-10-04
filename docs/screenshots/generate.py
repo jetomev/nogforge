@@ -30,7 +30,7 @@ def p(name, version, desc, tier, source, explicit=True, protected=None):
 
 
 SAMPLE = {
-    "list": {"nog": "1.6.0", "kind": "list", "packages": [
+    "list": {"nog": "1.6.1", "kind": "list", "packages": [
         p("alacritty", "0.17.0-1", "A cross-platform, OpenGL terminal emulator", 2, "extra"),
         p("dolphin", "26.08.1-1", "KDE File Manager", 2, "extra"),
         p("firefox", "143.0.2-1", "Fast, Private & Safe Web Browser", 2, "extra"),
@@ -38,13 +38,13 @@ SAMPLE = {
         p("keepassxc", "2.7.12-5", "Cross-platform community-driven port of KeePass", 3, "extra"),
         p("linux-zen", "7.2.7.zen1-1", "The Linux ZEN kernel and modules", 1, "extra",
           protected="the system needs this to start"),
-        p("nog", "1.6.0-1", "A tier-aware package manager for Arch Linux", 2, "aur"),
+        p("nog", "1.6.1-1", "A tier-aware package manager for Arch Linux", 2, "aur"),
         p("steam", "1.0.0.87-3", "Valve's digital software delivery system", 3, "multilib"),
         p("thunderbird", "156.0-1", "Standalone mail and news reader from mozilla.org", 3, "extra"),
         p("vlc", "3.0.23_2-16", "Multi-platform MPEG, VCD/DVD, and DivX player", 3, "extra"),
         p("glibc", "2.44", "GNU C Library", 1, "core", explicit=False, protected="part of the base system"),
     ]},
-    "search": {"nog": "1.6.0", "kind": "search", "query": "paint", "results": [
+    "search": {"nog": "1.6.1", "kind": "search", "query": "paint", "results": [
         {"name": "krita", "version": "6.0.4-2", "description": "Edit and paint images", "source": "extra",
          "installed": False, "tier": 3},
         {"name": "pinta", "version": "3.0.3-1", "description": "Drawing/editing program modeled after Paint.NET",
@@ -56,7 +56,7 @@ SAMPLE = {
         {"name": "krita-ai-diffusion", "version": "1.53.0-1", "description": "Generative AI plugin for Krita",
          "source": "aur", "installed": False, "tier": 3},
     ]},
-    "update": {"nog": "1.6.0", "kind": "plan",
+    "update": {"nog": "1.6.1", "kind": "plan",
                "sources": {"aur": "checked", "flatpak": "checked", "snap": "checked", "chaotic_aur_off": False},
                "ready": [{"name": "tzdata", "source": "core", "tier": 3, "old": "2026d-1", "new": "2026e-1",
                           "note": "hold just expired"},
@@ -77,7 +77,7 @@ import json, os, sys
 d = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
 a = sys.argv[1:]
 if a == ["--version"]:
-    print("nog 1.6.0"); sys.exit(0)
+    print("nog 1.6.1"); sys.exit(0)
 arg = lambda f: a[a.index(f) + 1].split(",") if f in a else []
 if a[0] == "update":
     keep, promote = arg("--keep"), arg("--promote")
@@ -119,7 +119,7 @@ async def main() -> None:
     with mock.patch("nogforge.app.count_flatpaks", return_value=2), \
             mock.patch("nogforge.app.count_snaps", return_value=1):
         app = NogForgeApp(logs=logs, cache_dir=cache)
-        app.set_title_status = lambda text: NogForgeApp.set_title_status(app, "your-computer · nog 1.6.0")
+        app.set_title_status = lambda text: NogForgeApp.set_title_status(app, "your-computer · nog 1.6.1")
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(2.0)
             shot(app, "01-dashboard")

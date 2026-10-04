@@ -155,7 +155,7 @@ def update_args(plan: dict, keep: set[str], promote: set[str]) -> list[str]:
 
 
 class NogForgeApp(ForgeApp):
-    APP_NAME = f"nogForge {__version__} · packages, the KognogOS way · beta"
+    APP_NAME = f"nogForge {__version__} · packages, the KognogOS way"
     SHOW_HINT_BAR = True
     SHOW_CHANGES_BAR = True
     CSS = NF_CSS
