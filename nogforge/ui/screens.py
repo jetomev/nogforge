@@ -470,8 +470,8 @@ class UpdateScreen(VerticalScroll, can_focus=False):
             f"[b]{ticked} to update[/]" + (f" ({promoted} promoted)" if promoted else "") +
             f" · {len(ready) - ticked} kept back · {len(held)} held" +
             (f" · {unk} nog will ask you about" if unk else "") +
-            f"\n[{m}]The update itself runs in the terminal: nog shows its plan and asks before anything "
-            f"changes, and the password comes through the system's window.[/]")
+            f"\n[{m}]The update runs here, inside nogForge: nog shows only what you ticked and asks before "
+            f"anything changes; nogForge asks for your password itself.[/]")
 
     @on(PackageList.Tick)
     def _tick(self, e: PackageList.Tick) -> None:

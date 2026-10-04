@@ -4,10 +4,12 @@ nog does the thinking; nogForge shows it (Javier, 3 Oct 2026). Everything
 here asks nog ≥ 1.6.1 for JSON — the installed list, search, the update plan —
 and never works out a tier, a hold or a coupling itself.
 
-Changes (install, remove, update) are *handed* to nog in the terminal: pacman's
-own "Proceed?" and the AUR's recipe review stay where nog's rulings put them
-(F-6 #38, #26), and the password comes through the system's own window
-(``NOG_ASKPASS=1`` → ``sudo -A``), like grubForge.
+Changes (install, remove, update) are *handed* to nog, which runs inside
+nogForge's own window (forgekit's RunWindow, v1.1): pacman's own "Proceed?"
+and the AUR's recipe review stay where nog's rulings put them (F-6 #38, #26),
+and the password is asked by nogForge itself (``NOG_ASKPASS=1`` → ``sudo -A``,
+whose helper asks the app; Javier, 4 Oct 2026). ``NOG_EVENTS`` names a file
+where nog writes its steps, for the steps view.
 
 ``NOGFORGE_NOG`` points at another nog (the tests use a stand-in).
 """
@@ -20,8 +22,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 
-ASKPASS_HELPERS = ("/usr/bin/ksshaskpass", "/usr/lib/ssh/x11-ssh-askpass", "/usr/bin/ssh-askpass",
-                   "/usr/lib/seahorse/ssh-askpass")
 
 
 class NogError(Exception):
@@ -100,24 +100,16 @@ def plan(keep: list[str] | None = None, promote: list[str] | None = None) -> dic
     return ask(*args, timeout=600)
 
 
-def askpass_program() -> str | None:
-    """The system's password window, if this computer has one."""
-    own = os.environ.get("SUDO_ASKPASS")
-    if own and os.access(own, os.X_OK):
-        return own
-    return next((p for p in ASKPASS_HELPERS if os.access(p, os.X_OK)), None)
-
-
-def change_command(action: str, names: list[str]) -> tuple[list[str], dict]:
-    """The nog command for a change, and the environment it runs with."""
+def change_command(action: str, names: list[str], events: str | None = None) -> tuple[list[str], dict]:
+    """The nog command for a change, and the environment it runs with: every
+    sudo nog runs asks through ``SUDO_ASKPASS`` (set by the app's password
+    bridge), and nog's steps go to ``events``."""
     env = dict(os.environ)
-    window = askpass_program()
-    if window and (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
-        env["NOG_ASKPASS"] = "1"
-        env["SUDO_ASKPASS"] = window
+    env["NOG_ASKPASS"] = "1"
+    if events:
+        env["NOG_EVENTS"] = events
     return [binary() or "nog", action, *names], env
 
 
 def describe_password(env: dict) -> str:
-    return ("The system's password window asks for your password." if env.get("NOG_ASKPASS") == "1"
-            else "nog asks for your password in the terminal (no password window here).")
+    return "nogForge asks for your password itself, in its own window; it goes to sudo and nowhere else."

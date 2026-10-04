@@ -154,12 +154,22 @@ def update_args(plan: dict, keep: set[str], promote: set[str]) -> list[str]:
     return sorted(ticked) + promoted
 
 
+def _events_file() -> str:
+    """A private, empty file for nog's steps (NOG_EVENTS), in the user's runtime folder."""
+    import tempfile
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    fd, path = tempfile.mkstemp(prefix="nogforge-events-", dir=base if base and os.access(base, os.W_OK) else None)
+    os.close(fd)
+    return path
+
+
 class NogForgeApp(ForgeApp):
     APP_NAME = f"nogForge {__version__} · packages, the KognogOS way"
     SHOW_HINT_BAR = True
     SHOW_CHANGES_BAR = True
     CSS = NF_CSS
     LICENSE_NOTICE = GPL3_NOTICE
+    PASSWORD_TITLE = "nog needs your password"
 
     def get_css_variables(self) -> dict[str, str]:
         """forgekit's roles, plus one of nogForge's own: cream, forgekit's yellow
@@ -539,15 +549,16 @@ class NogForgeApp(ForgeApp):
         cmd, env = nog.change_command("remove" if removing else "install", [p.name])
         if removing:
             change = ChangeGroup("Remove", "", [(p.name, p.version, "removed")])
-            steps = ["nog runs in this terminal and shows pacman's own list: what goes with it "
-                     "(what only it needed) — and asks before anything changes",
-                     nog.describe_password(env), "Then you come back here"]
+            steps = ["nog runs here, in a window inside nogForge, and pacman shows its own list: what goes "
+                     "with it (what only it needed), and asks before anything changes",
+                     nog.describe_password(env), "Each step shows as it happens; nog's own screen opens when it asks"]
         else:
             where = "built on this computer from the AUR: its helper shows the build recipe to review" if p.aur \
                 else f"from {p.source}"
             change = ChangeGroup("Install", "", [(p.name, "not installed", p.version)])
-            steps = [f"nog runs in this terminal: {where}; pacman shows what comes with it and asks first",
-                     nog.describe_password(env), "Then you come back here"]
+            steps = [f"nog runs here, in a window inside nogForge: {where}; pacman shows what comes with it "
+                     f"and asks first", nog.describe_password(env),
+                     "Each step shows as it happens; nog's own screen opens when it asks"]
         choice = await self.push_screen_wait(ReviewDialog(
             "Review before " + ("removing" if removing else "installing"), [change], steps=steps,
             buttons=[("Remove (r)" if removing else "Install (i)", "go", True)]))
@@ -560,13 +571,43 @@ class NogForgeApp(ForgeApp):
             return                              # nog is still working out your choices: the banner says so
         self.hand_off("update", update_args(self.choice_plan() or {}, self.keep, self.promote))
 
+    # tests set this to run nog without a window: (cmd, env) -> status
+    run_in_terminal = None
+
     def hand_off(self, action: str, names: list[str]) -> None:
-        """Give the terminal to nog for a change, then come back and read everything again."""
-        cmd, env = nog.change_command(action, names)
+        """nog runs the change inside nogForge (v1.1: Javier, 4 Oct, "it stays
+        inside the UI"); when its window closes, everything is read again."""
+        events = None if self.run_in_terminal else _events_file()
+        cmd, env = nog.change_command(action, names, events)
         before = {p.name: p.version for p in self.packages}
         expected = self._expected(action, names)
         kept = sorted(set(self.keep) | self.kept_partners()) if action == "update" else []
-        code = self.run_in_terminal(cmd, env)
+
+        def after(code: int | None) -> None:
+            if events:
+                try:
+                    os.unlink(events)
+                except OSError:
+                    pass
+            self._after_hand_off(action, names, 1 if code is None else code, before, expected, kept)
+
+        if self.run_in_terminal:
+            after(self.run_in_terminal(cmd, env))
+            return
+        targets = [n for n in names if not n.startswith("-")]
+        if "--promote" in names:
+            targets = [n for n in names[:names.index("--promote")] if not n.startswith("-")]
+        title = {"install": f"Installing {' '.join(targets)}", "remove": f"Removing {' '.join(targets)}",
+                 "update": f"Updating {len(targets)} package{'s' if len(targets) != 1 else ''}"
+                 + (f": {', '.join(targets[:5])}" + (" …" if len(targets) > 5 else "") if targets else ""),
+                 "clean": "Cleaning up old downloads"}.get(action, f"nog {action}")
+        done = {"install": "Installed.", "remove": "Removed.", "update": "Updated.",
+                "clean": "Cleaned up."}.get(action, "Done.")
+        self.run_worker(self.run_in_app(title, cmd, env, callback=after, events_path=events, tool="nog",
+                                        done_words=done), group="nf-run")
+
+    def _after_hand_off(self, action: str, names: list[str], code: int, before: dict, expected: dict,
+                        kept: list[str]) -> None:
         shown = "" if action == "update" else " ".join(names)
         self.changes.append((action, shown, code))
         word = {"install": "Installed", "remove": "Removed", "update": "Update finished",
@@ -578,7 +619,8 @@ class NogForgeApp(ForgeApp):
                 self.notify(f"{word[action]}: {shown or 'done'}.", title="nog finished", timeout=8)
         else:
             self.notify(f"nog stopped (status {code}): declined, or something went wrong — nog's own words are "
-                        f"in the terminal above, and in History.", title="Not done", severity="warning", timeout=12)
+                        f"on its screen in the run window, and in History.", title="Not done", severity="warning",
+                        timeout=12)
         self.load_local()
         if action == "update":
             self.keep, self.promote, self.keep_plan = set(), set(), None
@@ -603,9 +645,9 @@ class NogForgeApp(ForgeApp):
         missing = sorted(n for n in expected if n not in went_in)
         kernel = [n for n in went_in if n in KERNELS]
         if code != 0 and not went_in:
-            self.notify("nog stopped before anything changed (declined, or an error: its words are in the "
-                        "terminal above, and in History).", title="Nothing changed", severity="warning",
-                        timeout=12)
+            self.notify("nog stopped before anything changed (declined, or an error: its words were on its "
+                        "screen in the run window, and are in History).", title="Nothing changed",
+                        severity="warning", timeout=12)
             return
         lines = []
         if missing:
@@ -636,17 +678,3 @@ class NogForgeApp(ForgeApp):
             return
         self.exit()
 
-    def run_in_terminal(self, cmd: list[str], env: dict) -> int:
-        """The terminal belongs to nog until it's done (tests replace this)."""
-        with self.suspend():
-            print(f"\n── nogForge hands this to nog: {' '.join(cmd[1:])} ──\n", flush=True)
-            try:
-                code = subprocess.run(cmd, env=env).returncode
-            except OSError as e:
-                print(f"nog couldn't start: {e}")
-                code = 127
-            try:
-                input("\n── Press Enter to go back to nogForge ──")
-            except EOFError:
-                pass
-        return code

@@ -136,19 +136,15 @@ class TalkingToNog(StandIn):
             nog.installed()
         self.assertIn("older than 1.6.1", str(e.exception))
 
-    def test_password_window_when_there_is_one(self):
-        ask = self.dir / "askpass"
-        ask.write_text("#!/bin/sh\n")
-        ask.chmod(0o755)
-        os.environ["SUDO_ASKPASS"] = str(ask)
-        os.environ["DISPLAY"] = ":0"
-        cmd, env = nog.change_command("install", ["krita"])
-        self.assertEqual(cmd[1:], ["install", "krita"])
-        self.assertEqual((env["NOG_ASKPASS"], env["SUDO_ASKPASS"]), ("1", str(ask)))
-        os.environ.pop("DISPLAY")
+    def test_the_password_always_goes_through_the_app(self):
+        # Javier, 4 Oct: the password is asked inside the app, desktop or text console alike
+        os.environ.pop("DISPLAY", None)
         os.environ.pop("WAYLAND_DISPLAY", None)
+        cmd, env = nog.change_command("install", ["krita"], events="/run/user/1000/ev")
+        self.assertEqual(cmd[1:], ["install", "krita"])
+        self.assertEqual((env["NOG_ASKPASS"], env["NOG_EVENTS"]), ("1", "/run/user/1000/ev"))
         _cmd, env = nog.change_command("remove", ["steam"])
-        self.assertNotIn("NOG_ASKPASS", env, "no desktop: the terminal asks, not a window that can't open")
+        self.assertNotIn("NOG_EVENTS", env)
 
 
 class Catalogue(unittest.TestCase):
