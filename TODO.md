@@ -4,6 +4,12 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## Backlog from Javier's use · 2026-10-07 (the sudoForge 1.0.1 update, through nogForge)
+- [ ] **#17 · Update page:** unticking a package with the mouse scrolls the list back to the top — with 52 updates every tick means scrolling down again. Fix: change only the row, or restore the scroll position and the highlighted row after the redraw
+- [ ] **#18 · Update page:** "Tick all" / "Untick all" buttons at the top left of the list (Javier's words: Select All / Deselect All; wording his call), acting on the filtered list; keys in the hint bar and Help
+- [ ] **#19 · In-System page:** per-row buttons on the right — **Update** (only when newer), **Downgrade** (only when an older version is at hand; needs a design pass + nog's say), **Uninstall** (the word is Uninstall, not Remove; asks first with nog's removal preview)
+- Context: the update itself went fine (sudoforge 1.0.0 → 1.0.1, built by yay, password in nogForge's own box). The wobbly box borders in Javier's screenshots were Claude Desktop's terminal font, not nogForge
+
 ## v1.1.1 — the AUR build works from a terminal · F-13 #15
 - [x] Javier's AUR install of 1.1.0 failed in check(): a test's stand-in decided "in the run window" by `isatty(0)`; yay builds in a terminal. Fixed (NOG_EVENTS; stdin=DEVNULL); make-rc-packages.sh now builds under `script` (with a terminal, like yay)
 - [x] Released 1.1.1: tag, GitHub Latest, AUR `7da3a19` (built under a terminal before the push: 37 tests)
