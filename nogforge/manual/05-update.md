@@ -5,6 +5,12 @@ nog's update plan, and your choices:
 - **Ready now**: updates whose wait is over, each ticked **[x]**, with nog's note (*hold just expired*, *19 days past window*).
 - **Held**: still waiting, with **Ready on**, the day the wait ends, and a **↑ Promote** button.
 
+## One by itself, or all at once
+
+- **Find** (or **/**): type part of a name or of what it does, and both lists narrow as you type. **Esc** goes back to the list.
+- **⬆ Update** on a ready row updates **that one package by itself**: nog gets its name alone, works out what has to move with it, and asks before anything changes. The quickest way to update one thing.
+- **Tick All (t)** and **Untick All (n)** tick or untick every ready row in one go. Untick all, then tick the two you want, is the quick way to a small update.
+
 ## Keeping one back
 
 **Space** (or a click on its box) unticks a ready row: it says **kept back by you**, at once. A yellow **nog is working on it…** sign appears beside the update button, which waits in cream until nog answers; quick clicks are sent to nog together. nog then works out what has to stay back with it, because some packages only work at matching versions, and those rows untick themselves with the reason (*must stay back with ldb*). Ticking one of those ticks the one it waits for again. Updating some packages but not their partners can break a system; nog never lets that happen.

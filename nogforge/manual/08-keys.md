@@ -11,7 +11,8 @@
 | **p** | Repositories (In-System, Install) |
 | **/** | search |
 | **Space** | tick or untick an update |
-| **Enter** | the row's option: install, remove, promote · on nog Logs: open the log |
+| **t** · **n** | on Update: tick all · untick all |
+| **Enter** | the row's option: install, uninstall, promote, update this one · on nog Logs: open the log |
 | **Del** | remove the selected package (In-System) |
 | **Tab** / **Shift+Tab** | next / previous field or button |
 | **Esc** | leave a field, close a window |

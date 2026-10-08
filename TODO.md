@@ -4,6 +4,14 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## v1.2.0 — Javier's four · 2026-10-07 night (#17 #18 #19 #20)
+- [x] **#17** the list keeps its scroll and highlight on a redraw (`PackageList._redraw` restores `scroll_offset.y` after the rows are rebuilt)
+- [x] **#18** Tick All (t) / Untick All (n) above the Update lists; `app.tick_all` / `untick_all` go through nog's plan like a tick does
+- [x] **#20** a Find box on Update (`/` goes there; both lists follow as you type) and **⬆ Update** on every ready row → `app.update_one(name)`: nog gets the one name (plus `--promote` for a held one)
+- [x] **#19** In-System: **✕ Uninstall** (not Remove) everywhere a person reads it; **⬆ Update** beside it when nog's plan has a newer version (`Row.option2`, two buttons per row, each with its own hover and click). **Downgrade: not yet — nog has no downgrade; a nog feature first**
+- [x] Tests 37 → **41** (untick all / tick all; find + update one; In-System's Update button; the scroll survives a redraw); README, manual (03, 05, 08, 01), changelog; version 1.2.0
+- [ ] Release 1.2.0: tag, GitHub Release, AUR `nogforge`; Javier's run on the desktop (update one package by itself, the way he wanted tonight)
+
 ## Backlog from Javier's use · 2026-10-07 (the sudoForge 1.0.1 update, through nogForge)
 - [ ] **#17 · Update page:** unticking a package with the mouse scrolls the list back to the top — with 52 updates every tick means scrolling down again. Fix: change only the row, or restore the scroll position and the highlighted row after the redraw
 - [ ] **#18 · Update page:** "Tick all" / "Untick all" buttons at the top left of the list (Javier's words: Select All / Deselect All; wording his call), acting on the filtered list; keys in the hint bar and Help

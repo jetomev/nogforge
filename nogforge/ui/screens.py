@@ -325,7 +325,8 @@ class InSystemScreen(Vertical):
     def _fill(self) -> None:
         v = self.query_one(FilterBar).values()
         pkgs = filtered(self.app.packages, v["show"], v["kind"], v["words"], self.app.apps, v["tier"], v["repos"])
-        self.query_one(PackageList).show([installed_row(p) for p in pkgs])
+        newer = self.app.updatable_names()
+        self.query_one(PackageList).show([installed_row(p, updatable=p.name in newer) for p in pkgs])
         msg = self.app.packages_error or f"{len(pkgs):,} shown"
         self.query_one("#is-count", Static).update(f"[$forge-muted]{msg}[/]")
 
@@ -396,8 +397,8 @@ class InstallScreen(Vertical):
 
 # ── Update: choose what goes in; nog says what must stay together ────────────
 class UpdateScreen(VerticalScroll, can_focus=False):
-    FORGE_HINTS = [("Space", "tick / untick"), ("Enter", "promote (Held)"), ("k", "check for updates"), ("c", "clean up"),
-                   ("u", "update"), ("F1", "help")]
+    FORGE_HINTS = [("Space", "tick / untick"), ("Enter", "update this one / promote"), ("t", "tick all"),
+                   ("n", "untick all"), ("/", "find"), ("k", "check"), ("u", "update"), ("F1", "help")]
 
     def compose(self) -> ComposeResult:
         with Horizontal(classes="forge-buttons nf-top"):
@@ -405,7 +406,17 @@ class UpdateScreen(VerticalScroll, can_focus=False):
             yield Button("Update the Ticked Ones (u)", id="up-run", variant="primary")
             yield Static("", id="up-busy")
         yield Static("", id="up-summary")
-        yield Static("[b]Ready now[/]  [$forge-muted]untick to keep one back: nog says what must stay back with it[/]",
+        # nogforge#18 + #20 (Javier, 2026-10-07): tick / untick everything in one go, and find one
+        # package to update by itself — "too hard to get one package updated by itself"
+        with Horizontal(classes="nf-bar -last nf-upbar"):
+            yield Static("Find", classes="nf-label -lead")
+            yield SearchInput(placeholder="a name or what it does — the lists below follow as you type",
+                              id="up-find")
+            with Horizontal(classes="forge-buttons nf-inline"):
+                yield Button("Tick All (t)", id="up-tick-all")
+                yield Button("Untick All (n)", id="up-untick-all")
+        yield Static("[b]Ready now[/]  [$forge-muted]untick to keep one back: nog says what must stay back with it; "
+                     "Update on a row updates that one by itself[/]",
                      classes="nf-section")
         yield PackageHeader(option=False, ver_w=32, ticks=True, id="up-ready-head")
         yield PackageList(ver_w=32, id="up-ready")
@@ -442,10 +453,11 @@ class UpdateScreen(VerticalScroll, can_focus=False):
 
         def pkg(r):
             return Package(r["name"], r["new"], "", r["tier"], source_of(r), installed=True)
+        one = "Update" if is_console() else "⬆ Update"
         # nog's plan with your choices: what's ready (promoted too), and what stays back
         ready = []
         for r in plan["ready"]:
-            ready.append(Row(pkg(r), "", "ok", version=f"{r['old']} → {r['new']}", tick=True,
+            ready.append(Row(pkg(r), one, "ok", version=f"{r['old']} → {r['new']}", tick=True,
                              note=r.get("note", ""), note_role="accent" if "promoted" in r.get("note", "") else ""))
         for r in plan["held"]:
             if r.get("kept_back") or r["name"] in app.kept_partners():
@@ -459,8 +471,8 @@ class UpdateScreen(VerticalScroll, can_focus=False):
                     extra=datetime.fromtimestamp(r["ready_on"]).strftime("%b %-d") if r.get("ready_on") else "—",
                     note=r.get("note", ""))
                 for r in plan["held"] if not (r.get("kept_back") or r["name"] in app.kept_partners())]
-        self.query_one("#up-ready", PackageList).show(ready)
-        self.query_one("#up-held", PackageList).show(held)
+        self.all_ready, self.all_held = ready, held
+        self._show_filtered()
         ticked = sum(1 for r in ready if r.tick)
         self.query_one("#up-run", Button).label = f"Update the Ticked Ones ({ticked}) (u)"
         run.disabled = waiting or (ticked == 0 and not plan.get("unknown"))
@@ -472,6 +484,40 @@ class UpdateScreen(VerticalScroll, can_focus=False):
             (f" · {unk} nog will ask you about" if unk else "") +
             f"\n[{m}]The update runs here, inside nogForge: nog shows only what you ticked and asks before "
             f"anything changes; nogForge asks for your password itself.[/]")
+
+    all_ready: list = []
+    all_held: list = []
+
+    def _show_filtered(self) -> None:
+        """Both lists, narrowed by the Find box (name or description, any case)."""
+        words = self.query_one("#up-find", Input).value.strip().lower().split()
+
+        def match(row: Row) -> bool:
+            p = row.package
+            app = self.app.apps.get(p.name)
+            hay = " ".join((p.name, (app.name if app and app.name else ""), (app.summary if app and app.summary else ""),
+                            p.description or "", row.note or "")).lower()
+            return all(w in hay for w in words)
+        self.query_one("#up-ready", PackageList).show([r for r in self.all_ready if match(r)])
+        self.query_one("#up-held", PackageList).show([r for r in self.all_held if match(r)])
+
+    @on(Input.Changed, "#up-find")
+    def _find(self, e: Input.Changed) -> None:
+        e.stop()
+        self._show_filtered()
+
+    def on_button_pressed(self, e: Button.Pressed) -> None:
+        if e.button.id == "up-tick-all":
+            e.stop()
+            self.app.tick_all()
+        elif e.button.id == "up-untick-all":
+            e.stop()
+            self.app.untick_all()
+
+    def on_key(self, e) -> None:
+        if e.key == "escape" and isinstance(self.app.focused, Input):
+            e.stop()
+            self.query_one("#up-ready", PackageList).focus()
 
     @on(PackageList.Tick)
     def _tick(self, e: PackageList.Tick) -> None:

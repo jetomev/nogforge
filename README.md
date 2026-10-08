@@ -6,7 +6,7 @@
 ![Platform: KognogOS / Arch](https://img.shields.io/badge/Platform-KognogOS%20%2F%20Arch-lightgrey.svg)
 ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)
 ![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen.svg)
-![Version: 1.1.1](https://img.shields.io/badge/Version-1.1.1-purple.svg)
+![Version: 1.2.0](https://img.shields.io/badge/Version-1.2.0-purple.svg)
 [![AUR](https://img.shields.io/aur/version/nogforge?color=1793d1&label=AUR)](https://aur.archlinux.org/packages/nogforge)
 
 ---
@@ -19,13 +19,17 @@ nogForge brings what [Pamac](https://github.com/manjaro/pamac), Manjaro's softwa
 
 ---
 
+## What's in 1.2
+
+Javier's four, from a night of using it (7 October 2026): on **Update**, a **Find** box narrows both lists as you type, every ready row has its own **⬆ Update** button (one package by itself, nog works out what moves with it), and **Tick All (t)** / **Untick All (n)** do the lot in one go; ticking a row far down the list no longer throws the list back to the top. On **In-System**, the button says **✕ Uninstall** (not Remove), and a row nog has a newer version for shows **⬆ Update** beside it. Downgrade waits for nog to offer one.
+
 ## What's in 1.1
 
 - 🏠 **Dashboard**: updates per source and tier (nog's real plan), your packages per source and tier, the last things nog did, and the space old downloads take.
-- 📦 **In-System**: what's on this computer, spreadsheet-style: badge, name, version, tier, repository, and a **✕ Remove** button, with what it is underneath. System packages are **Locked**, with the reason: the system needs it to start, it's part of the base system, or another package needs it.
+- 📦 **In-System**: what's on this computer, spreadsheet-style: badge, name, version, tier, repository, a **✕ Uninstall** button and, where nog has a newer version, **⬆ Update** beside it, with what it is underneath. System packages are **Locked**, with the reason: the system needs it to start, it's part of the base system, or another package needs it.
 - 🔎 **Install**: search the repositories and the AUR (names and descriptions, best matches first) and **+ Install**.
 - One **filter bar** on both: Search with a 🔍 button, Show (yours or all), Type (Games, Graphics, Office…), Tier, and **Repositories (p)**, a window to tick the repositories to show.
-- ⬆ **Update**: nog's plan with your choices. Untick an update to keep it back, and **nog** says what must stay back with it, so a half-updated, broken system can't happen. A tick changes at once; while nog works out your choices, a yellow sign says so. **↑ Promote** makes a held one ready now; it goes in with the rest. **Update the Ticked Ones** hands nog exactly those, by name, and nog shows and installs only them. Afterwards, **What changed** compares versions before and after, and after a new kernel offers **Restart Now (r)** or **Later (l)**.
+- ⬆ **Update**: nog's plan with your choices. Untick an update to keep it back, and **nog** says what must stay back with it, so a half-updated, broken system can't happen. A tick changes at once; while nog works out your choices, a yellow sign says so. **↑ Promote** makes a held one ready now; it goes in with the rest. **Update the Ticked Ones** hands nog exactly those, by name, and nog shows and installs only them; **⬆ Update** on a row does that one by itself, **Find** narrows the lists, **Tick All** / **Untick All** do the lot. Afterwards, **What changed** compares versions before and after, and after a new kernel offers **Restart Now (r)** or **Later (l)**.
 - 🗂 **History**: **Activity** (everything nog ran, in plain words) and **nog Logs** (nog's own record; Enter opens a run whole, as it appeared on screen).
 - 🪟 **nog works inside nogForge** *(1.1)*: a change opens a window over the app with nog's steps and a progress bar. nog's own screen opens by itself when nog or pacman asks something (pacman's table in view, **Yes (y) / No (n)** to answer), when something fails, or on **F12**. yay's menus for AUR builds are typed in it. Nothing leaves the app.
 - 🔐 **The password is asked in nogForge's own box** *(1.1)*, on a desktop and on a text console alike. It goes to sudo and nowhere else; nothing is written to disk.
@@ -97,13 +101,15 @@ python3 nogforge/main.py
 |---|---|
 | 1 – 6 | Dashboard, In-System, Install, Update, Activity, nog Logs |
 | u | open Update · on Update: update the ticked ones |
+| t · n | on Update: tick all · untick all |
+| / | on Update: the Find box (on In-System and Install: Search) |
 | r | review packages (Install) |
 | k | check for updates |
 | c | clean up old downloads (asks first) |
 | p | Repositories (In-System, Install) |
 | Space | tick or untick an update |
 | Enter | the row's option: install, remove, promote · on nog Logs: open the run |
-| Del | remove the selected package (In-System) |
+| Del | uninstall the selected package (In-System) |
 | / | search |
 | F1 | help on this screen |
 | ? | all keys |
@@ -120,24 +126,16 @@ python3 nogforge/main.py
 
 ## Changelog
 
+### v1.2.0 — October 7, 2026 · Javier's four ([#17](https://github.com/jetomev/nogforge/issues/17), [#18](https://github.com/jetomev/nogforge/issues/18), [#19](https://github.com/jetomev/nogforge/issues/19), [#20](https://github.com/jetomev/nogforge/issues/20))
+
+- **Update:** a **Find** box narrows the Ready and Held lists as you type (`/` goes there); every ready row has **⬆ Update**, which hands nog that one name alone; **Tick All (t)** and **Untick All (n)**; a tick far down the list keeps the scroll and the highlight (#17).
+- **In-System:** **✕ Uninstall** instead of Remove, everywhere a person reads it; **⬆ Update** beside it when nog's plan has a newer version (#19). Downgrade waits for nog to offer one (a nog feature first).
+- The package list draws two buttons per row where a row has two; the mouse hovers and clicks each on its own.
+- Tests: 41 (was 37). Found on the way: a plain Textual app needs forgekit's colour variables to mount a `PackageList` in a test.
+
 ### v1.1.1 — October 4, 2026 · the AUR build works from a terminal
 
 The 1.1.0 AUR package didn't build on Javier's computer: three tests failed inside yay ([F-13, #15](https://github.com/jetomev/nogforge/issues/15)). The app itself was fine; a test's stand-in for nog decided "am I inside nogForge's run window?" by checking for a terminal. Our own builds had none; yay's build has one. The stand-in now goes by nog's steps file, the older tests never give it a keyboard, and our test builds now run with a terminal attached, the way yay does. Tests: 37, passing with and without a terminal.
-
-### v1.1.0 — October 4, 2026 · nog works inside nogForge
-
-Javier, an hour after 1.0.0: *"nog running outside the UI. It is not beautiful, it is disrupting"*, and the password belongs in the app, also on a text console. Five options were researched ([docs/research](docs/research/2026-10-04-nog-inside-the-ui.md)); he chose three, all in this release ([#14](https://github.com/jetomev/nogforge/issues/14)). Needs [nog 1.7.0](https://github.com/jetomev/nog/releases/tag/v1.7.0) and [forgekit 0.6.0](https://github.com/jetomev/forgekit/releases/tag/v0.6.0).
-
-- 🪟 **No more leaving the app.** A change opens a window with nog's steps (from nog's `NOG_EVENTS`) and a progress bar. nog's own screen stays folded until nog or pacman asks something (Yes/No buttons, the table in view), until something fails, or until **F12**. yay's menus are typed in it; its viewer and editor work there too.
-- 🔐 **The password in nogForge's own box**, desktop or text console; no desktop password window needed.
-- 📦 **Installs name the row's source** (`aur/neofetch`, `extra/cowsay`): in the KognogOS VM, the AUR's neofetch had become chaotic-aur's unifetch ([nog F-11](https://github.com/jetomev/nog/issues/45)).
-- The review window's **Install (i)** / **Remove (r)** now answer to their key (found on the text console; fixed in forgekit for every app).
-
-Tested in the KognogOS VM on a real text console (installs from the repositories and the AUR, an update with steps, a cancelled password, a removal), then by Javier on his desktop and tty3: *"wow! better than expected!"*, *"works wonders"* ([testing/](testing/20261004%20-%20Test%20Matrix%20for%20nogForge%20v1-1-0.md)). Tests: 36 → 37.
-
-*Earlier versions: [docs/CHANGELOG.md](docs/CHANGELOG.md).*
-
----
 
 ## How this project is built
 

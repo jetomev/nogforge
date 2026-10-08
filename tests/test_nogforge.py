@@ -196,6 +196,9 @@ class Rows(StandIn):
         pk = nog.installed()
         by = {p.name: p for p in pk}
         self.assertEqual(installed_row(by["steam"]).option_role, "danger")
+        self.assertTrue(installed_row(by["steam"]).option.endswith("Uninstall"), "Javier: Uninstall, not Remove")
+        self.assertEqual(installed_row(by["steam"]).option2, "", "no Update button without a newer version")
+        self.assertTrue(installed_row(by["steam"], updatable=True).option2.endswith("Update"), "#19")
         self.assertEqual(installed_row(by["linux-zen"]).option_role, "muted")
         self.assertEqual(search_row(Package("krita", "6", installed=False)).option_role, "ok")
         self.assertEqual(search_row(Package("gimp", "3", installed=True)).option_role, "muted")
@@ -706,6 +709,59 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await self.until(pilot, lambda: not app.keep_busy))
             self.assertEqual(self.asked(), ["update --keep tzdata --json"], "one question, with the last choices")
 
+    # ── Javier's four, 2026-10-07 (nogforge #17 #18 #19 #20) ───────────────────────────────
+    async def test_untick_all_and_tick_all(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            for wid in ("#up-find", "#up-tick-all", "#up-untick-all"):   # by position: nothing cut off at 100 columns
+                r = app.query_one(wid).region
+                self.assertTrue(0 < r.width and r.x + r.width <= 100, f"{wid} is cut off: {r}")
+            ready.focus()
+            await pilot.press("n")
+            self.assertTrue(await self.until(pilot, lambda: app.keep >= {"tzdata", "ldb", "libwbclient"}), "#18: every ready one kept back")
+            await pilot.pause(0.3)
+            self.assertFalse(any(r.tick for r in ready.rows), "no box ticked")
+            self.assertIn("(0)", str(app.query_one("#up-run").label))
+            await pilot.press("t")
+            self.assertTrue(await self.until(pilot, lambda: not app.keep), "#18: tick all clears what you kept")
+            await pilot.pause(0.3)
+            self.assertTrue(all(r.tick for r in ready.rows))
+
+    async def test_find_one_and_update_it_by_itself(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            ready = await self.open_update(app, pilot)
+            await pilot.press("slash")
+            self.assertEqual(app.focused.id, "up-find", "/ goes to the Update page's own Find box")
+            await pilot.press("t", "z")
+            await pilot.pause(0.3)
+            self.assertEqual([r.package.name for r in ready.rows], ["tzdata"], "#20: the list follows as you type")
+            self.assertEqual(app.query_one("#up-held").rows, [], "the held list is filtered too")
+            self.assertTrue(ready.rows[0].option.endswith("Update"), "a per-row Update button")
+            await pilot.press("escape")
+            self.assertIs(app.focused, ready)
+            # the button: last 16 columns of the row's first line
+            await pilot.click("#up-ready", offset=(ready.row_width - 4, 1))
+            self.assertTrue(await self.until(pilot, lambda: self.ran() == ["update tzdata"]), self.ran())
+
+    async def test_in_system_offers_update_beside_uninstall_when_nog_has_a_newer_version(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            await pilot.press("2")
+            await pilot.pause(0.4)
+            pl = app.query_one("#is-list")
+            rows = {r.package.name: r for r in pl.rows}
+            newer = {n for n in rows if n in app.updatable_names()}
+            self.assertTrue(newer, "the stand-in's list shares a name with its plan")
+            for n, r in rows.items():
+                self.assertEqual(bool(r.option2), n in newer, f"{n}: Update only where nog has a newer version")
+            name = sorted(newer)[0]
+            pl.post_message(pl.Act(rows[name], 2))
+            self.assertTrue(await self.until(pilot, lambda: self.ran()[-1:] == [f"update {name}"]), self.ran())
+            self.assertTrue(rows[name].option.endswith("Uninstall") or rows[name].option.endswith("Locked"))
+
     def test_update_hands_nog_the_ticked_list_or_for_an_older_nog_what_you_kept(self):
         from nogforge.app import update_args
         plan = {"nog": "1.6.1", "ready": [{"name": "vde2"}, {"name": "git"}], "unknown": [{"name": "x"}]}
@@ -835,3 +891,38 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.press("r")
             await pilot.pause(0.3)
             self.assertTrue(app.restarted)
+
+
+
+class ScrollSurvives(unittest.IsolatedAsyncioTestCase):
+    """nogforge#17: a redraw (a tick far down the list) must not throw the list back to the top."""
+
+    async def test_show_again_keeps_the_scroll_and_the_highlight(self):
+        from textual.app import App
+        from nogforge.nog import Package
+        from nogforge.ui.packages import PackageList, Row
+        from forgekit.theme import FORGE_CSS
+        rows = [Row(Package(f"pkg{i:02}", "1.0", "", 3, "extra", installed=True), "Uninstall", "danger") for i in range(30)]
+
+        from forgekit import css_variables, console_mode
+
+        class Tiny(App):
+            CSS = FORGE_CSS + "PackageList { height: 12; }"
+            def get_css_variables(self):
+                return {**super().get_css_variables(), **css_variables(console_mode())}
+            def compose(self):
+                yield PackageList(id="pl")
+        app = Tiny()
+        async with app.run_test(size=(100, 14)) as pilot:
+            pl = app.query_one("#pl", PackageList)
+            pl.show(rows)
+            await pilot.pause()
+            pl.highlighted = 20
+            pl.scroll_to(y=30, animate=False, force=True)
+            await pilot.pause()
+            y_before = pl.scroll_offset.y
+            self.assertGreater(y_before, 0, "the list really scrolled")
+            pl.show(list(rows))                       # the redraw a tick causes
+            await pilot.pause(); await pilot.pause()
+            self.assertEqual(pl.highlighted, 20, "the highlighted row survives")
+            self.assertEqual(pl.scroll_offset.y, y_before, "#17: the scroll survives the redraw")

@@ -48,7 +48,7 @@ NF_CSS = FORGE_CSS + """
 .nf-label { width: auto; height: 3; content-align: left middle; color: $forge-muted; padding: 0 1 0 1; }
 .nf-inline { width: auto; height: 3; padding: 0 0 0 1; }
 .nf-inline Button { margin: 0; min-width: 0; width: auto; height: 3; padding: 0 2; content-align: center middle; }
-#is-find, #in-find { width: 1fr; }
+#is-find, #in-find, #up-find { width: 1fr; }
 #is-show { width: 19; } #is-type, #in-type { width: 18; } #is-tier, #in-tier { width: 17; }
 PackageHeader, .nf-head { height: 1; padding: 0 1; color: $forge-accent; margin: 1 0 0 0; }
 PackageList, RecordList { height: 1fr; border: solid $forge-field-border; background: $forge-bg; padding: 0; }
@@ -61,6 +61,7 @@ PackageList:focus > .option-list--option-highlighted, RecordList:focus > .option
 #sec-insystem, #sec-install, #sec-update, #sec-activity, #sec-noglogs { padding: 0 2 0 0; }
 #sec-update PackageList { height: auto; max-height: 14; }
 .nf-top { height: auto; padding: 0 0 1 0; align-horizontal: left; }
+.nf-upbar { margin: 0 0 1 0; }
 .nf-top Button { margin: 0 2 0 0; }
 .nf-section { height: auto; margin: 1 0 0 0; }
 #up-summary { height: auto; }
@@ -220,6 +221,7 @@ class NogForgeApp(ForgeApp):
         Binding("u", "updates", show=False), Binding("r", "go('install')", show=False),
         Binding("h", "go('activity')", show=False), Binding("c", "clean", show=False),
         Binding("k", "check", show=False),
+        Binding("t", "tick_all", show=False), Binding("n", "untick_all", show=False),
         Binding("p", "repositories", show=False),
         Binding("slash", "find", show=False),
         Binding("f1", "help_here", show=False, priority=True),
@@ -458,6 +460,8 @@ class NogForgeApp(ForgeApp):
         cur = self.query_one("#forge-work").current
         if cur == "sec-insystem":
             self.query_one("#is-find").focus()
+        elif cur == "sec-update":
+            self.query_one("#up-find").focus()       # #20: find the one to update by itself
         else:
             self._switch_section("install")
             self.query_one("#in-find").focus()
@@ -535,20 +539,57 @@ class NogForgeApp(ForgeApp):
     # ── changes: reviewed here, then nog runs them in the terminal ───────────
     def on_package_list_act(self, e: PackageList.Act) -> None:
         p = e.row.package
+        label = e.row.option2 if e.which == 2 else e.row.option
+        if label.endswith("Update"):             # Update's Ready rows, and In-System's second button (#19, #20)
+            self.update_one(p.name)
+            return
         if e.row.option.endswith("Promote"):
             self.promote_package(p.name)
             return
         if e.row.option_role == "muted":
             if p.protected:
-                self.notify(f"{p.name} can't be removed here: {p.protected}.", title="Locked", timeout=8)
+                self.notify(f"{p.name} can't be uninstalled here: {p.protected}.", title="Locked", timeout=8)
             return
         self.review(p, removing=e.row.option_role == "danger")
+
+    # ── one package by itself, every package at once (nogforge#18, #20; Javier, 2026-10-07) ──
+    def updatable_names(self) -> set[str]:
+        """Every package nog's plan knows a newer version of (ready or held)."""
+        plan = self.plan or {}
+        return {r["name"] for r in plan.get("ready", [])} | {r["name"] for r in plan.get("held", [])}
+
+    def update_one(self, name: str) -> None:
+        """Update this one package by itself: nog gets its name alone (and a promote if it is
+        held), and works out itself what has to move with it."""
+        if self.keep_busy:
+            return
+        held = {r["name"] for r in (self.plan or {}).get("held", [])}
+        self.hand_off("update", [name] + (["--promote", name] if name in held else []))
+
+    def tick_all(self) -> None:
+        if self.keep:
+            self.keep = set()
+            self.reload_choices()
+
+    def untick_all(self) -> None:
+        names = {r["name"] for r in (self.choice_plan() or self.plan or {}).get("ready", [])}
+        if names - self.keep:
+            self.keep |= names
+            self.reload_choices()
+
+    def action_tick_all(self) -> None:
+        if self.query_one("#forge-work").current == "sec-update":
+            self.tick_all()
+
+    def action_untick_all(self) -> None:
+        if self.query_one("#forge-work").current == "sec-update":
+            self.untick_all()
 
     @work(exclusive=True, group="nf-change")
     async def review(self, p: Package, removing: bool) -> None:
         cmd, env = nog.change_command("remove" if removing else "install", [p.name])
         if removing:
-            change = ChangeGroup("Remove", "", [(p.name, p.version, "removed")])
+            change = ChangeGroup("Uninstall", "", [(p.name, p.version, "uninstalled")])
             steps = ["nog runs here, in a window inside nogForge, and pacman shows its own list: what goes "
                      "with it (what only it needed), and asks before anything changes",
                      nog.describe_password(env), "Each step shows as it happens; nog's own screen opens when it asks"]
@@ -560,8 +601,8 @@ class NogForgeApp(ForgeApp):
                      f"and asks first", nog.describe_password(env),
                      "Each step shows as it happens; nog's own screen opens when it asks"]
         choice = await self.push_screen_wait(ReviewDialog(
-            "Review before " + ("removing" if removing else "installing"), [change], steps=steps,
-            buttons=[("Remove (r)" if removing else "Install (i)", "go", True)]))
+            "Review before " + ("uninstalling" if removing else "installing"), [change], steps=steps,
+            buttons=[("Uninstall (r)" if removing else "Install (i)", "go", True)]))
         if choice is None:
             return
         # nog 1.7 (F-11): install from the source of the row picked, so the AUR's
