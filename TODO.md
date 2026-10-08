@@ -8,6 +8,7 @@
 - [ ] **#17 · Update page:** unticking a package with the mouse scrolls the list back to the top — with 52 updates every tick means scrolling down again. Fix: change only the row, or restore the scroll position and the highlighted row after the redraw
 - [ ] **#18 · Update page:** "Tick all" / "Untick all" buttons at the top left of the list (Javier's words: Select All / Deselect All; wording his call), acting on the filtered list; keys in the hint bar and Help
 - [ ] **#19 · In-System page:** per-row buttons on the right — **Update** (only when newer), **Downgrade** (only when an older version is at hand; needs a design pass + nog's say), **Uninstall** (the word is Uninstall, not Remove; asks first with nog's removal preview)
+- [ ] **#20 · Update page:** update **one** package by itself — a filter box above the list + a per-row "Update this one" button (Javier, 10-07 21:50: "too hard to get one package updated by itself"; he used `nog` in a terminal instead). **Javier: these four come before the next hypeForge steps**
 - Context: the update itself went fine (sudoforge 1.0.0 → 1.0.1, built by yay, password in nogForge's own box). The wobbly box borders in Javier's screenshots were Claude Desktop's terminal font, not nogForge
 
 ## v1.1.1 — the AUR build works from a terminal · F-13 #15
