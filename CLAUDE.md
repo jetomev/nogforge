@@ -30,4 +30,4 @@ A [forgekit](https://github.com/jetomev/forgekit) (Python/Textual) terminal app 
 - Plain words throughout. The readers are not engineers.
 
 ## Release discipline
-`~/.claude/rules/release.md`; version in every surface; signed tags; GitHub before the AUR; forgekit (and nog) on the AUR at the version nogForge needs before nogForge ships.
+`~/.claude/rules/release.md`; version in every surface; signed tags; GitHub before the AUR, and **Javier's test of the locally built package before the AUR push** (one push per proven version — 2026-10-07); forgekit (and nog) on the AUR at the version nogForge needs before nogForge ships.
