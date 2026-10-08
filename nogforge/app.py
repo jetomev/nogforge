@@ -23,7 +23,8 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Static
 
 from forgekit import (
-    FORGE_CSS, GPL3_NOTICE, ChangeGroup, ForgeApp, ForgeModal, ManualScreen, Notice, ReviewDialog, load_pages,
+    FORGE_CSS, GPL3_NOTICE, MENU_HINT, ChangeGroup, ForgeApp, ForgeModal, ManualScreen, Notice, ReviewDialog,
+    load_pages,
 )
 
 from . import __version__, catalogue, nog, records
@@ -206,8 +207,12 @@ class NogForgeApp(ForgeApp):
             ("License", "l", "license"), ("About", "a", "about")]},
         {"id": "quit", "title": "Quit", "kind": "action", "action": "quit"},
     ]
+    # 1.4.0 (Javier, 2026-10-08, #24 #25): the menu's keys come from forgekit 0.10.0. Every entry has a
+    # number in bar order (1 Dashboard … 5 History, 6 Help; Quit has none) and Ctrl + its underlined
+    # letter, which works from inside a search box too. History and Help open their menus.
     SHORTCUTS = [
-        ("1-6, Ctrl+letter", "Dashboard, In-System, Install, Update, Activity, nog Logs"),
+        ("1-6", "Dashboard, In-System, Install, Update, History (its menu), Help (its menu)"),
+        ("Ctrl+letter", "the underlined letter in the menu bar: D, I, N, U, Y (History), H (Help)"),
         ("u", "open Update · on Update: update the ticked ones"),
         ("r", "review packages (Install)"),
         ("h", "open History (Activity)"),
@@ -219,15 +224,10 @@ class NogForgeApp(ForgeApp):
         ("Esc", "leave a field, close a window"),
         ("F1", "help on this screen"),
         ("?", "this list"),
-        ("q or Ctrl+Q", "quit"),
+        ("q or Ctrl+Q", "quit (not there inside hypeForge Settings: Settings closes nogForge)"),
     ]
-    HINTS = [("u", "updates"), ("r", "packages"), ("1-6", "screens"), ("F1", "help"), ("?", "all keys")]
+    HINTS = [("u", "updates"), ("r", "packages"), MENU_HINT, ("F1", "help"), ("?", "all keys")]
     BINDINGS = [
-        Binding("1", "go('dashboard')", show=False), Binding("2", "go('insystem')", show=False),
-        Binding("3", "go('install')", show=False), Binding("4", "go('update')", show=False),
-        Binding("5", "go('activity')", show=False), Binding("6", "go('noglogs')", show=False),
-        Binding("ctrl+d", "go('dashboard')", show=False), Binding("ctrl+i", "go('insystem')", show=False),
-        Binding("ctrl+n", "go('install')", show=False), Binding("ctrl+u", "go('update')", show=False),
         Binding("u", "updates", show=False), Binding("r", "go('install')", show=False),
         Binding("h", "go('activity')", show=False), Binding("c", "clean", show=False),
         Binding("k", "check", show=False),
@@ -510,6 +510,15 @@ class NogForgeApp(ForgeApp):
             self._switch_section("activity")
         elif action_id == "show-noglogs":
             self._switch_section("noglogs")
+
+    def before_quit(self) -> bool:
+        """1.4.0 (#26): never close while nog is working. q, Ctrl+Q, Quit and hypeForge Settings'
+        request to close all ask here; stopping nog halfway through an update could break the system."""
+        from forgekit import RunWindow
+        if any(isinstance(s, RunWindow) for s in self.screen_stack):
+            self.notify("nog is still working. Close nogForge once nog is done.", title="Not yet", timeout=8)
+            return False
+        return True
 
     def _mark_active(self, section_id: str) -> None:
         """History is a menu of two screens: it's lit for both."""

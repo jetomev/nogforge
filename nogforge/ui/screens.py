@@ -24,7 +24,7 @@ from textual.message import Message
 from textual.widgets import Button, Input, OptionList, Select, Static
 from textual.widgets.option_list import Option
 
-from forgekit import CheckList, ForgeModal, glyph
+from forgekit import MENU_HINT, CheckList, ForgeModal, glyph
 from forgekit.console import is_console
 
 from .. import catalogue, records
@@ -69,18 +69,24 @@ def search_label() -> str:
 
 
 # ── the filter bar In-System and Install share ───────────────────────────────
-SCREEN_KEYS = {"1": "dashboard", "2": "insystem", "3": "install", "4": "update", "5": "activity", "6": "noglogs"}
+def menu_entry_for(app, digit: str) -> str | None:
+    """The menu entry a number key opens, the way forgekit 0.10.0 numbers them: 1 to N in bar
+    order, Help included, Quit not (1.4.0: 5 is History's menu, 6 is Help's, #25)."""
+    entries = [m["id"] for m in app.MENU if m["id"] != "quit"][:9]
+    n = int(digit) if len(digit) == 1 and digit in "123456789" else 0
+    return entries[n - 1] if 1 <= n <= len(entries) else None
 
 
 class SearchInput(Input):
-    """The Search box. While it's empty, the screen keys 1–6 still switch
-    screens (found in testing: opening Install put the cursor here, and the
-    next screen key was typed in as text). Once you type, digits are text."""
+    """The Search box. While it's empty, the number keys still go to the menu
+    (found in testing: opening Install put the cursor here, and the next
+    number was typed in as text). Once you type, digits are text."""
 
     async def _on_key(self, event) -> None:
-        if not self.value and event.character and event.character in "123456":
+        entry = menu_entry_for(self.app, event.character or "") if not self.value else None
+        if entry is not None:
             event.prevent_default()                 # the box doesn't type it...
-            self.app.action_go(SCREEN_KEYS[event.character])   # ...the screen key works
+            self.app.action_activate(entry)         # ...the number does what it does everywhere else
             event.stop()
             return
         await super()._on_key(event)
@@ -223,7 +229,7 @@ class FilterBar(Vertical):
 
 # ── Dashboard ────────────────────────────────────────────────────────────────
 class DashboardScreen(VerticalScroll, can_focus=False):
-    FORGE_HINTS = [("u", "updates"), ("r", "packages"), ("c", "clean up"), ("1-6", "screens"), ("F1", "help"), ("?", "all keys")]
+    FORGE_HINTS = [("u", "updates"), ("r", "packages"), ("c", "clean up"), MENU_HINT, ("F1", "help"), ("?", "all keys")]
 
     def compose(self) -> ComposeResult:
         with Grid(id="nf-dash"):
@@ -607,7 +613,7 @@ class RecordList(OptionList):
 
 
 class ActivityScreen(Vertical):
-    FORGE_HINTS = [("↑↓", "move"), ("6", "nog Logs"), ("F1", "help"), ("?", "all keys")]
+    FORGE_HINTS = [("↑↓", "move"), ("5 l", "nog Logs"), ("F1", "help"), ("?", "all keys")]
     COLUMNS = [("When", 16), ("What", 42), ("By", 12), ("Result", 22)]
 
     def compose(self) -> ComposeResult:
@@ -632,7 +638,7 @@ class ActivityScreen(Vertical):
 
 
 class NogLogsScreen(Vertical):
-    FORGE_HINTS = [("↑↓", "move"), ("Enter", "open the log"), ("5", "Activity"), ("F1", "help")]
+    FORGE_HINTS = [("↑↓", "move"), ("Enter", "open the log"), ("5 a", "Activity"), ("F1", "help")]
     COLUMNS = [("Date", 12), ("Time", 10), ("Command", 40), ("User", 12), ("Status", 8), ("Outcome", 12)]
 
     def compose(self) -> ComposeResult:

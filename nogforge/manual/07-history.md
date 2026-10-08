@@ -1,12 +1,12 @@
 # History
 
-The **History** menu has two screens.
+The **History** menu (**5** or **Ctrl+Y**) has two screens; pick one with its letter.
 
-## Activity (5)
+## Activity (5, then a)
 
 Every install, removal, update and clean-up nog ran, newest first, from nogForge or from a terminal, in plain words: when, what, who, and the result, with nog's own command underneath.
 
-## nog Logs (6)
+## nog Logs (5, then l)
 
 nog's own record, as nog wrote it (`~/.local/share/nog/logs/`): date, time, command, user, status and outcome. **Enter** (or a click) opens the run in a window, **whole, as it appeared on screen**: nog's tables, pacman's questions, an AUR build, any error. nog 1.6 keeps every run from a terminal that way, for 30 days; what you typed is never in it. Scroll with the mouse or the arrow keys.
 

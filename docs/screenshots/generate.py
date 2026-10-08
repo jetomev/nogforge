@@ -150,10 +150,10 @@ async def main() -> None:
             await pilot.pause(1.0)
             ready.focus()
             shot(app, "05-update")
-            await pilot.press("5")
+            await pilot.press("5", "a")               # 1.4.0: 5 opens History's menu, a = Activity
             await pilot.pause(0.5)
             shot(app, "06-activity")
-            await pilot.press("6")
+            await pilot.press("5", "l")               # l = nog Logs
             await pilot.pause(0.5)
             shot(app, "07-nog-logs")
 

@@ -231,6 +231,10 @@ def pick(pl, name):
     pl.highlighted = [r.package.name for r in pl.rows].index(name)
 
 
+# every page, by its keys (1.4.0: 5 opens History's menu; a = Activity, l = nog Logs)
+PAGE_KEYS = (("1",), ("2",), ("3",), ("4",), ("5", "a"), ("5", "l"))
+
+
 class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         super().setUp()
@@ -384,8 +388,9 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
         app = self.app()
         async with app.run_test(size=(100, 30)) as pilot:
             self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
-            for key in "123456":
-                await pilot.press(key)
+            for keys in PAGE_KEYS:
+                key = " ".join(keys)
+                await pilot.press(*keys)
                 await pilot.pause(0.5)
                 for b in app.screen.query(Button):
                     if b.display and b.region.width:
@@ -409,10 +414,10 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
         app.run_in_terminal = lambda cmd, env: 0
         async with app.run_test(size=(100, 30)) as pilot:
             self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
-            for key in "123456":
-                await pilot.press(key)
+            for keys in PAGE_KEYS + (("6",), ("escape",)):     # and Help's menu, drawn and closed
+                await pilot.press(*keys)
                 await pilot.pause(0.5)
-                self.assertIsNone(app._exception, f"screen {key} on a console")
+                self.assertIsNone(app._exception, f"screen {' '.join(keys)} on a console")
             await pilot.press("3")
             for ch in "krita":
                 await pilot.press(ch)
@@ -959,3 +964,230 @@ class ScrollSurvives(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(); await pilot.pause()
             self.assertEqual(pl.highlighted, 20, "the highlighted row survives")
             self.assertEqual(pl.scroll_offset.y, y_before, "#17: the scroll survives the redraw")
+
+
+# ── 1.4.0: the menu's keys come from forgekit 0.10.0; --hypeforge (#24 #25 #26) ────────────────────
+class AppMaker:
+    """The Screens set-up, for test classes that shouldn't rerun every Screens test."""
+    until = Screens.until
+
+    def setUp(self):
+        super().setUp()
+        from unittest import mock
+        for name, n in (("count_flatpaks", 2), ("count_snaps", 1)):   # this computer's own stay out
+            patcher = mock.patch(f"nogforge.app.{name}", return_value=n)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def app(self, **kw):
+        from nogforge.app import NogForgeApp
+        a = NogForgeApp(apps=self.apps, logs=self.logs, cache_dir=self.cache, **kw)
+        a.ran = []
+        a.run_in_terminal = lambda cmd, env: (a.ran.append(cmd[1:]), 0)[1]
+        return a
+
+
+class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
+    """Javier, 2026-10-08, running nogForge inside hypeForge Settings: Ctrl+U and Ctrl+Y did nothing
+    (F-14, #24); 5 and 6 jumped into History's two pages instead of opening History's menu like Help,
+    and the bar's "1-6 screens" was confusing (F-15, #25)."""
+
+    def shown(self, app) -> str:
+        return app.query_one("#forge-work").current.removeprefix("sec-")
+
+    def lit(self, app) -> list[str]:
+        return [w.id.removeprefix("menu-") for w in app.screen_stack[0].query(".menu-title.active")]
+
+    def dropdown(self, app) -> str | None:
+        from forgekit.menu import MenuDropdown
+        return app.screen.menu_id if isinstance(app.screen, MenuDropdown) else None
+
+    def test_every_underlined_letter_is_its_own(self):
+        from forgekit import menu_key_clashes
+        from forgekit.menu import accel
+        from nogforge.app import NogForgeApp
+        self.assertEqual(menu_key_clashes(NogForgeApp.MENU), [], "two entries with one letter = a dead Ctrl key")
+        letters = {accel(m) for m in NogForgeApp.MENU}
+        for b in NogForgeApp.BINDINGS:
+            if b.key.startswith("ctrl+"):
+                self.assertNotIn(b.key.removeprefix("ctrl+"), letters, f"{b.key} would fight the menu's own")
+            self.assertNotIn(b.key, list("123456789"), "the numbers come from forgekit now, in bar order")
+
+    async def test_ctrl_u_reaches_update_even_from_a_search_box(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            for page, box in (("install", "#in-find"), ("insystem", "#is-find")):
+                app.action_go(page)
+                await pilot.pause(0.2)
+                app.query_one(box).focus()
+                await pilot.press("k", "r")                     # words in the box: Ctrl+U used to clear them
+                await pilot.pause(0.1)
+                await pilot.press("ctrl+u")
+                await pilot.pause(0.3)
+                self.assertEqual(self.shown(app), "update", f"Ctrl+U from {page}'s search box opens Update")
+                self.assertEqual(self.lit(app), ["update"])
+
+    async def test_ctrl_y_and_5_open_historys_menu_not_a_page(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("ctrl+y")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "history", "Ctrl+Y opens History's menu")
+            self.assertEqual(self.shown(app), "dashboard", "and doesn't change the page by itself")
+            await pilot.press("escape")
+            await pilot.pause(0.2)
+            await pilot.press("5")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "history", "5 opens History's menu, like 6 opens Help's")
+            self.assertEqual(self.shown(app), "dashboard")
+            await pilot.press("l")                              # nog Logs, from the menu
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "noglogs")
+            self.assertEqual(self.lit(app), ["history"], "History is lit for both of its pages")
+            await pilot.press("5", "a")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "activity")
+            self.assertEqual(self.lit(app), ["history"])
+            app.action_go("install")                            # the empty search box: the number still works
+            await pilot.pause(0.3)
+            self.assertEqual(app.focused.id, "in-find")
+            await pilot.press("5")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "history", "5 from the empty Search box: History's menu too")
+            self.assertEqual(app.query_one("#in-find").value, "", "and nothing typed into the box")
+
+    async def test_6_opens_help_and_the_others_keep_their_pages(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("6")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "help")
+            await pilot.press("escape")
+            await pilot.pause(0.2)
+            for key, page in (("2", "insystem"), ("4", "update"), ("1", "dashboard"), ("3", "install")):
+                app.set_focus(None)
+                await pilot.press(key)
+                await pilot.pause(0.3)
+                self.assertEqual(self.shown(app), page, key)
+            for key, page in (("ctrl+d", "dashboard"), ("ctrl+i", "insystem"), ("ctrl+n", "install")):
+                await pilot.press(key)
+                await pilot.pause(0.3)
+                self.assertEqual(self.shown(app), page, key)
+
+    async def test_the_bar_says_1_6_menu(self):
+        from forgekit import HintBar
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            text = str(app.query_one(HintBar).render())
+            self.assertIn("1-6", text)
+            self.assertIn("menu", text)
+            self.assertNotIn("screens", text)
+            self.assertNotIn("{menu}", text)
+
+    async def test_inside_hypeforge_settings_there_is_no_quit(self):
+        app = self.app(hypeforge=True)
+        async with app.run_test(size=(100, 32)) as pilot:
+            calls = []
+            app.exit = lambda *a, **k: calls.append(1)
+            await pilot.pause(0.5)
+            self.assertEqual(len(app.query("#menu-quit")), 0, "no Quit in the bar")
+            for key in ("q", "ctrl+q"):
+                app.set_focus(None)
+                await pilot.press(key)
+                await pilot.pause(0.2)
+            app.action_act("quit")
+            self.assertEqual(calls, [], "Q, Ctrl+Q and the Quit action do nothing: Settings closes nogForge")
+            self.assertEqual(app._menu_count, 6, "the numbers stay the same: Quit never had one")
+            await pilot.press("6")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "help")
+
+    async def test_q_still_quits_on_its_own(self):
+        app = self.app(hypeforge=False)
+        async with app.run_test(size=(100, 32)) as pilot:
+            calls = []
+            app.exit = lambda *a, **k: calls.append(1)
+            await pilot.pause(0.5)
+            self.assertEqual(len(app.query("#menu-quit")), 1)
+            app.set_focus(None)
+            await pilot.press("q")
+            await pilot.pause(0.2)
+            self.assertEqual(calls, [1])
+
+
+class StartedByHypeForge(unittest.TestCase):
+    """#26: hypeForge Settings starts nogForge with --hypeforge; people never need it, so --help and
+    the man page leave it out."""
+
+    def run_main(self, args: list[str]) -> list[dict]:
+        import contextlib
+        import datetime
+        import io
+        from unittest import mock
+        from nogforge import cli
+        made = []
+
+        class Fake:
+            def __init__(self, **kw):
+                made.append(kw)
+                self.changes, self.started = [], datetime.datetime.now()
+
+            def run(self):
+                pass
+        with mock.patch("nogforge.app.NogForgeApp", Fake), mock.patch.object(cli, "LOG_DIR", tempfile.mkdtemp()), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(args), 0)
+        return made
+
+    def test_both_spellings_reach_the_app(self):
+        self.assertEqual(self.run_main(["--hypeforge"]), [{"hypeforge": True}])
+        self.assertEqual(self.run_main(["--hypeForge"]), [{"hypeforge": True}])
+        self.assertEqual(self.run_main([]), [{"hypeforge": False}])
+
+    def test_help_and_the_man_page_leave_it_out(self):
+        import contextlib
+        import io
+        from nogforge.cli import main, parser
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            main(["--help"])
+        self.assertIn("1-6", out.getvalue())
+        self.assertNotIn("hypeforge", out.getvalue().lower())
+        self.assertNotIn("hypeforge", parser().format_help().lower())
+        self.assertNotIn("hypeforge", (ROOT / "nogforge.1").read_text().lower())
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(main(["--hype"]), 2, "no shortened spelling")
+
+
+class NeverClosedWhileNogWorks(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
+    """#26: hypeForge Settings asks nogForge to close (forgekit's host_quit); while nog is running
+    an update, nogForge says not yet, and so do q and Ctrl+Q."""
+
+    async def test_not_while_a_run_is_open(self):
+        import sys
+        from forgekit import RunWindow
+        for hype in (True, False):
+            app = self.app(hypeforge=hype)
+            async with app.run_test(size=(100, 32)) as pilot:
+                calls = []
+                app.exit = lambda *a, **k: calls.append(1)
+                await pilot.pause(0.5)
+                app.push_screen(RunWindow("Updating", [sys.executable, "-c", "import time; time.sleep(30)"],
+                                          dict(os.environ), tool="nog"))
+                await pilot.pause(0.5)
+                app.host_quit()
+                await pilot.press("ctrl+q")
+                await pilot.pause(0.2)
+                self.assertEqual(calls, [], f"hypeforge={hype}: nothing closes nogForge while nog works")
+                self.assertTrue(any(isinstance(s, RunWindow) for s in app.screen_stack))
+                from forgekit.terminal import TerminalPane
+                proc = app.screen.query_one(TerminalPane).proc
+                app.screen_stack[-1].dismiss(None)               # nog done, its window closed
+                await pilot.pause(0.3)
+                proc.wait(timeout=5)                             # the stand-in is gone, not left running
+                app.host_quit()
+                self.assertEqual(calls, [1], "then Settings' request closes it")

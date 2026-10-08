@@ -10,7 +10,14 @@ It has the Dashboard, In-System, Install, Update (with your choices) and History
 - **2 In-System**: what's on this computer.
 - **3 Install**: find and install something new.
 - **4 Update**: nog's update plan: untick what waits, promote what can't.
-- **History ▸ 5 Activity / 6 nog Logs**: everything nog ran, in plain words, and nog's own logs.
+- **5 History**: opens its menu: **Activity** (everything nog ran, in plain words) or **nog Logs** (nog's own logs).
+- **6 Help**: opens its menu: this manual, the list of keys, the license, About.
+
+Every name in the menu bar has a number (1 to 6, left to right) and an underlined letter: **Ctrl** + that letter goes there too, even while you're typing in a search box (Ctrl+U for Update, Ctrl+Y for History). History and Help open their menus; pick from them with the underlined letter or Enter.
+
+## Closing nogForge
+
+**q**, **Ctrl+Q** or **Quit** in the menu bar. Inside **hypeForge Settings**, nogForge is one of Settings' pages: there's no Quit, and q and Ctrl+Q do nothing. You close it from Settings, which asks nogForge first. Either way, nogForge never closes while nog is working: stopping nog halfway through an update could break the system, so it says *Not yet* until nog is done.
 
 ## How a change happens
 

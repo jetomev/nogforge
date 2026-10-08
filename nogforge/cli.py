@@ -4,10 +4,15 @@
 it closes the terminal gets the record of the session: the banner, what was
 installed or removed, where it was logged, and a thank-you — the same start
 and end as every Forge app and nog.
+
+1.4.0 (#26): ``--hypeforge`` (or ``--hypeForge``) is how hypeForge Settings
+starts nogForge as one of its pages: no Quit, Settings closes it. It's for
+Settings, not for people, so ``--help`` and the man page leave it out.
 """
 
 from __future__ import annotations
 
+import argparse
 import datetime as dt
 import os
 import sys
@@ -21,7 +26,8 @@ Usage:
   nogforge --version   print the version
   nogforge --help      print this
 
-Inside: 1-6 change screens, u reviews updates, r installs, k checks for updates,
+Inside: 1-6 or Ctrl + the underlined letter go to a menu entry (History and Help
+open their menus), u reviews updates, r installs, k checks for updates,
 c cleans up, the button on a row does its option (install, remove, promote),
 F1 explains, ? lists every key.
 nogForge shows what nog decides; it needs nog 1.7.0 or newer.
@@ -43,8 +49,17 @@ def summary(app) -> tuple[str, list[str], str]:
     return f"nogForge · {len(done)} change{'s' if len(done) != 1 else ''} made", lines, "ok" if not stopped else "warn"
 
 
+def parser() -> argparse.ArgumentParser:
+    """Only ``--hypeforge`` goes through argparse (kept out of its help, as forgekit
+    does it); every other word is read below, as before."""
+    from forgekit import add_hypeforge_argument
+    p = argparse.ArgumentParser(prog="nogforge", add_help=False, allow_abbrev=False)
+    add_hypeforge_argument(p)
+    return p
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
+    opts, args = parser().parse_known_args(sys.argv[1:] if argv is None else argv)
     if args and args[0] in ("--version", "-V", "version"):
         print(f"nogForge {__version__}")
         return 0
@@ -58,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     from forgekit import closing_notice, runs_log_row, session_banner
     from .app import NogForgeApp
 
-    app = NogForgeApp()
+    app = NogForgeApp(hypeforge=opts.hypeforge)
     app.run()
     ended = dt.datetime.now()
     heading, lines, level = summary(app)
