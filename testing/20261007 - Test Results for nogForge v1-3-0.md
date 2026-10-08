@@ -9,6 +9,6 @@ Matrix: `20261007 - Test Matrix for nogForge v1-3-0.md`.
 | 1.3–1.4 | PASS — `Choices.test_in_system_filters_as_you_type_and_the_filter_rows_are_short`: no `#is-go`, the list narrowed on three letters, filter areas ≤ 4 rows, drop-downs 1 row; `test_untick_all_and_tick_all` asserts Update's bar positions |
 | 1.5 console | PASS — `20261007 - console preview 1-3-0 In-System one-row filters.png`: two one-row filter rows, 8 packages visible where 6 were; every character drawable and visible |
 | 1.6 makepkg | PASS 22:32 — checksum + signature of the published tarball; `check()` ran the 42 tests; `nogforge 1.3.0-1` built |
-| 2 · The desktop | *(Javier's run)* |
+| 2 · The desktop | **PASS 22:55** — Javier promoted 1.3.0 past nog's wait, tried In-System / Install / Update: "pass". New request from the run: #23 (the run window as a progress bar) |
 
 Found on the way: the first live-filter version moved the keyboard to the list after every keystroke (so "tzd" typed "t" and then two list keys). Typing now keeps the box; Enter moves to the list. The screenshot generator still clicked the removed Search button; it presses Enter now.

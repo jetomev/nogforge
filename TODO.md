@@ -4,11 +4,14 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## Later — the run window (Javier, 2026-10-07 22:55, #23)
+- [ ] **#23** a nog run as a **progress bar** with the terminal **folded behind an arrow** (▲ closed / ▼ open); nog's yes/no and AUR questions as nogForge pop-ups — shape 1 needs nog to emit its questions as events (a nog issue when we take it); shape 2 (just the fold) is cheap. Javier: "another day"
+
 ## v1.3.0 — searches follow the typing; one-row filters · 2026-10-07 night (#21 #22)
 - [x] **#21** every search filters as you type: `FilterBar` posts `Searched` on `Input.Changed` — In-System at once, Install after `LIVE_WAIT` 0.5 s and from `LIVE_MIN` 2 characters (a timer reset per keystroke); the Search button removed; an emptied Install box clears the results
 - [x] **#22** one-row filter rows: `SearchInput`, labels, `Select` (`SelectCurrent` without its border, also on a console) and the inline buttons at height 1; the filter area 7 → 4 rows
 - [x] Tests 41 → **42** (the old search test types instead of clicking; new: In-System narrows without Enter, one nog search for five quick keystrokes, every drop-down one row, filter areas ≤ 4 rows); console preview of In-System clean
-- [x] **Released 1.3.0 — 2026-10-07 22:32**: tag `v1.3.0`, GitHub Release (Latest, signed assets, download byte-identical), AUR `nogforge` 1.3.0-1 (makepkg: 42 tests in check()). Javier: `nog update nogforge --promote nogforge`, then the matrix's section 2
+- [x] **Released 1.3.0 — 2026-10-07 22:32**: tag `v1.3.0`, GitHub Release (Latest, signed assets, download byte-identical), AUR `nogforge` 1.3.0-1 (makepkg: 42 tests in check()). Javier: `nog update nogforge --promote nogforge` → **section 2 PASSED 22:55 ("pass"); #17–#22 closed**
 
 ## v1.2.0 — Javier's four · 2026-10-07 night (#17 #18 #19 #20)
 - [x] **#17** the list keeps its scroll and highlight on a redraw (`PackageList._redraw` restores `scroll_offset.y` after the rows are rebuilt)
