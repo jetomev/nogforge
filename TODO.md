@@ -4,6 +4,12 @@
 
 **Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
 
+## v1.3.0 — searches follow the typing; one-row filters · 2026-10-07 night (#21 #22)
+- [x] **#21** every search filters as you type: `FilterBar` posts `Searched` on `Input.Changed` — In-System at once, Install after `LIVE_WAIT` 0.5 s and from `LIVE_MIN` 2 characters (a timer reset per keystroke); the Search button removed; an emptied Install box clears the results
+- [x] **#22** one-row filter rows: `SearchInput`, labels, `Select` (`SelectCurrent` without its border, also on a console) and the inline buttons at height 1; the filter area 7 → 4 rows
+- [x] Tests 41 → **42** (the old search test types instead of clicking; new: In-System narrows without Enter, one nog search for five quick keystrokes, every drop-down one row, filter areas ≤ 4 rows); console preview of In-System clean
+- [ ] Release 1.3.0: tag, GitHub Release, AUR `nogforge`; Javier promotes it past nog's 7-day wait and runs the matrix
+
 ## v1.2.0 — Javier's four · 2026-10-07 night (#17 #18 #19 #20)
 - [x] **#17** the list keeps its scroll and highlight on a redraw (`PackageList._redraw` restores `scroll_offset.y` after the rows are rebuilt)
 - [x] **#18** Tick All (t) / Untick All (n) above the Update lists; `app.tick_all` / `untick_all` go through nog's plan like a tick does

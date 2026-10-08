@@ -129,7 +129,7 @@ async def main() -> None:
             await pilot.press("3")
             for ch in "paint":
                 await pilot.press(ch)
-            await pilot.click("#in-go")
+            await pilot.press("enter")                 # 1.3: the list follows the typing; Enter searches at once
             await pilot.pause(1.5)
             shot(app, "03-install")
             await pilot.press("enter")

@@ -323,12 +323,18 @@ class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.5)
             await pilot.press("3")
             await pilot.pause(0.2)
+            searches_seen = []
+            real_search = app.run_search
+            app.run_search = lambda q: (searches_seen.append(q), real_search(q))
             for ch in "krita":
-                await pilot.press(ch)
-            await pilot.click("#in-go")                       # the Search button
+                await pilot.press(ch)                          # #21: no Search button — the list follows the typing
             pl = app.query_one("#in-list")
             self.assertTrue(await self.until(pilot, lambda: len(pl.rows) == 2))
-            self.assertEqual(app.focused, pl, "after a search the results have the keys")
+            self.assertEqual(searches_seen, ["krita"], "one search for five quick keystrokes (it waits for the last)")
+            self.assertEqual(app.focused.id, "in-find", "typing keeps the keyboard in the box")
+            app.run_search = real_search
+            await pilot.press("enter")                         # Enter: search now, and the keys go to the list
+            self.assertTrue(await self.until(pilot, lambda: app.focused is pl), "after Enter the results have the keys")
             self.assertEqual([r.package.name for r in pl.rows], ["krita", "krita-git"],
                              "only what has the words: gimp doesn't mention krita, though nog's search matched it")
             self.assertEqual([r.option_role for r in pl.rows], ["ok", "ok"])
@@ -761,6 +767,33 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             pl.post_message(pl.Act(rows[name], 2))
             self.assertTrue(await self.until(pilot, lambda: self.ran()[-1:] == [f"update {name}"]), self.ran())
             self.assertTrue(rows[name].option.endswith("Uninstall") or rows[name].option.endswith("Locked"))
+
+    async def test_in_system_filters_as_you_type_and_the_filter_rows_are_short(self):
+        # #21 + #22 (Javier, 2026-10-07): no Search button anywhere; one-row boxes
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.packages))
+            await pilot.press("2")
+            await pilot.pause(0.3)
+            pl = app.query_one("#is-list")
+            before = len(pl.rows)
+            self.assertGreater(before, 1)
+            self.assertEqual(len(app.query("#is-go")), 0, "the Search button is gone")
+            await pilot.press("slash")
+            name = pl.rows[0].package.name
+            for ch in name[:3]:
+                await pilot.press(ch)
+            await pilot.pause(0.2)
+            self.assertTrue(0 < len(pl.rows) < before, "the list narrowed without Enter or a button")
+            self.assertTrue(all(name[:3] in (r.package.name + (r.package.description or "")).lower() for r in pl.rows))
+            for wid in ("#is-filters",):
+                self.assertLessEqual(app.query_one(wid).region.height, 4, "#22: two one-row bars, not seven rows")
+            await pilot.press("3")
+            await pilot.pause(0.3)
+            self.assertLessEqual(app.query_one("#in-filters").region.height, 4)
+            for sel in app.query("Select"):
+                if sel.region.width:
+                    self.assertEqual(sel.region.height, 1, f"{sel.id}: a one-row drop-down")
 
     def test_update_hands_nog_the_ticked_list_or_for_an_older_nog_what_you_kept(self):
         from nogforge.app import update_args

@@ -41,13 +41,23 @@ NF_CSS = FORGE_CSS + """
 .nf-box { height: auto; border: round $forge-border; border-title-color: $forge-accent; border-title-style: bold; padding: 0 1; }
 .nf-box-buttons { height: auto; padding: 1 0 0 0; align-horizontal: left; }
 .nf-box-buttons Button { margin: 0; width: auto; min-width: 0; padding: 0 2; }
+/* #22 (Javier, 2026-10-07: "the search boxes are extremely tall"): one row each — the box, the labels,
+   the drop-downs and the buttons — so a page spends two rows on its filters, not seven */
 .nf-filters { height: auto; }
-.nf-bar { height: 3; margin: 0 0 1 0; }
-.nf-bar.-last { margin: 0; }
+.nf-bar { height: 1; margin: 0 0 1 0; }
+.nf-bar.-last { margin: 0 0 1 0; }
 .nf-label.-lead { width: 9; padding: 0 1 0 1; }
-.nf-label { width: auto; height: 3; content-align: left middle; color: $forge-muted; padding: 0 1 0 1; }
-.nf-inline { width: auto; height: 3; padding: 0 0 0 1; }
-.nf-inline Button { margin: 0; min-width: 0; width: auto; height: 3; padding: 0 2; content-align: center middle; }
+.nf-label { width: auto; height: 1; content-align: left middle; color: $forge-muted; padding: 0 1 0 1; }
+.nf-inline { width: auto; height: 1; padding: 0 0 0 1; }
+.nf-inline Button { margin: 0 0 0 1; min-width: 0; width: auto; height: 1; padding: 0 2; content-align: center middle; }
+.nf-bar SearchInput { height: 1; border: none; padding: 0 1; background: $forge-surface; color: $forge-text; }
+.nf-bar SearchInput:focus { background: $forge-selected-bg; color: $forge-selected; }
+.nf-bar SearchInput:ansi { background: $forge-bg; }
+.nf-bar SearchInput:focus:ansi { background: $forge-selected-bg; }
+.nf-bar Select { height: 1; margin: 0 1 0 0; }
+.nf-bar Select > SelectCurrent { border: none; height: 1; padding: 0 1; }
+.nf-bar Select > SelectCurrent:ansi { border: none; }
+.nf-bar Select:focus > SelectCurrent { background: $forge-selected-bg; color: $forge-selected; }
 #is-find, #in-find, #up-find { width: 1fr; }
 #is-show { width: 19; } #is-type, #in-type { width: 18; } #is-tier, #in-tier { width: 17; }
 PackageHeader, .nf-head { height: 1; padding: 0 1; color: $forge-accent; margin: 1 0 0 0; }
@@ -203,7 +213,7 @@ class NogForgeApp(ForgeApp):
         ("h", "open History (Activity)"),
         ("Enter", "the row's option: install, remove, promote; on nog Logs: open the log"),
         ("Space", "tick or untick an update"),
-        ("Del", "remove the selected package (In-System)"),
+        ("Del", "uninstall the selected package (In-System)"),
         ("/", "search"),
         ("p", "repositories (In-System, Install)"),
         ("Esc", "leave a field, close a window"),

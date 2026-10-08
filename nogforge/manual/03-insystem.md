@@ -4,7 +4,7 @@ What's on this computer, as a table: **Icon · Name · Version · Tier · Reposi
 
 ## The filter bar (the same on Install)
 
-- **Search** and **🔍 Search (Enter)**: any word from a name or a description. **Esc** leaves the box. While the box is empty, the screen keys 1–6 still work.
+- **Search**: any word from a name or a description — the list follows as you type (on Install, which asks nog, after a short pause and from two characters on; Enter searches at once). **Esc** leaves the box. While the box is empty, the screen keys 1–6 still work.
 - **Show**: *Yours* (what you chose; the default) or *All* (with everything they brought along).
 - **Type**: Games, Graphics, Office, Internet… from Arch's app catalogue (the one Pamac uses). Packages that aren't apps are *Other*.
 - **Tier**: all, or one tier.

@@ -131,22 +131,24 @@ class FilterBar(Vertical):
         """The filters changed (not the search words: those wait for the button or Enter)."""
 
     class Searched(Message):
-        def __init__(self, words: str) -> None:
+        def __init__(self, words: str, final: bool = False) -> None:
             super().__init__()
             self.words = words
+            self.final = final      # True on Enter: the keyboard may move to the list; False while typing
 
     def __init__(self, prefix: str, show: bool, **kw) -> None:
         super().__init__(classes="nf-filters", **kw)
         self.prefix, self.with_show = prefix, show
         self.repos: set[str] | None = None            # None: all of them
 
+    LIVE_WAIT = 0.5          # Install asks nog: wait this long after the last keystroke (#21)
+    LIVE_MIN = 2             # ...and only from two characters on
+
     def compose(self) -> ComposeResult:
         p = self.prefix
         with Horizontal(classes="nf-bar"):
             yield Static("Search", classes="nf-label -lead")
-            yield SearchInput(placeholder="a name or what it does", id=f"{p}-find")
-            with Horizontal(classes="forge-buttons nf-inline"):
-                yield Button(search_label(), id=f"{p}-go", variant="primary")
+            yield SearchInput(placeholder="a name or what it does — the list follows as you type", id=f"{p}-find")
         with Horizontal(classes="nf-bar -last"):
             # Javier, 3 Oct: the boxes line up on the left: the first label of each line is one width
             if self.with_show:
@@ -174,13 +176,33 @@ class FilterBar(Vertical):
     @on(Input.Submitted)
     def _enter(self, e: Input.Submitted) -> None:
         e.stop()
-        self.post_message(self.Searched(e.value.strip()))
+        self._cancel_pending()
+        self.post_message(self.Searched(e.value.strip(), final=True))
+
+    _pending = None
+
+    def _cancel_pending(self) -> None:
+        if self._pending is not None:
+            self._pending.stop()
+            self._pending = None
+
+    @on(Input.Changed)
+    def _typed(self, e: Input.Changed) -> None:
+        """Javier (2026-10-07): every search follows as you type, no button. In-System
+        filters what is already here, at once. Install asks nog, so it waits LIVE_WAIT after the
+        last keystroke and needs LIVE_MIN characters (an emptied box clears the results at once)."""
+        e.stop()
+        words = e.value.strip()
+        self._cancel_pending()
+        if self.prefix == "in" and words and len(words) < self.LIVE_MIN:
+            return
+        if self.prefix == "in" and words:
+            self._pending = self.set_timer(self.LIVE_WAIT, lambda: self.post_message(self.Searched(words)))
+            return
+        self.post_message(self.Searched(words))
 
     def on_button_pressed(self, e: Button.Pressed) -> None:
-        if e.button.id == f"{self.prefix}-go":
-            e.stop()
-            self.post_message(self.Searched(self.query_one(f"#{self.prefix}-find", Input).value.strip()))
-        elif e.button.id == f"{self.prefix}-repos":
+        if e.button.id == f"{self.prefix}-repos":
             e.stop()
             self.choose_repositories()
 
@@ -298,7 +320,7 @@ def source_of(r: dict) -> str:
 
 # ── In-System (was Home) ─────────────────────────────────────────────────────
 class InSystemScreen(Vertical):
-    FORGE_HINTS = [("↑↓", "pick"), ("Del", "remove"), ("/", "search"), ("p", "repositories"), ("F1", "help")]
+    FORGE_HINTS = [("↑↓", "pick"), ("Del", "uninstall"), ("/", "search"), ("p", "repositories"), ("F1", "help")]
 
     def compose(self) -> ComposeResult:
         yield FilterBar("is", show=True, id="is-filters")
@@ -335,8 +357,8 @@ class InSystemScreen(Vertical):
     def _changed(self, e) -> None:
         e.stop()
         self._fill()
-        if isinstance(e, FilterBar.Searched):
-            self.query_one(PackageList).focus()
+        if isinstance(e, FilterBar.Searched) and e.final:
+            self.query_one(PackageList).focus()          # Enter: the keyboard moves to the list; typing keeps it
 
     def on_key(self, e) -> None:
         if e.key == "escape" and isinstance(self.app.focused, Input):
@@ -346,33 +368,37 @@ class InSystemScreen(Vertical):
 
 # ── Install (was Search) ─────────────────────────────────────────────────────
 class InstallScreen(Vertical):
-    FORGE_HINTS = [("type", "then Search (Enter)"), ("Enter", "install"), ("p", "repositories"), ("F1", "help")]
+    FORGE_HINTS = [("type", "the list follows"), ("Enter", "install"), ("p", "repositories"), ("F1", "help")]
 
     def compose(self) -> ComposeResult:
         yield FilterBar("in", show=False, id="in-filters")
         yield PackageHeader(id="in-head")
         yield PackageList(id="in-list")
-        yield Static("[$forge-muted]Type what you're looking for, then Search (or Enter). Type, Tier and "
+        yield Static("[$forge-muted]Type a name or what it does: the list follows as you type. Type, Tier and "
                      "Repositories narrow the results.[/]", id="in-count", classes="nf-count")
 
     def on_mount(self) -> None:
         self.query_one(PackageList).apps = self.app.apps
         self.results = []
 
+    _final = False
+
     @on(FilterBar.Searched)
     def _search(self, e: FilterBar.Searched) -> None:
         e.stop()
+        self._final = e.final
         if e.words:
             self.query_one("#in-count", Static).update(f"[$forge-muted]Searching{glyph('ellipsis')}[/]")
             self.app.run_search(e.words)
         else:
-            self.query_one("#in-count", Static).update("[$forge-muted]Type a word first: a name or what it does.[/]")
+            self.show_results([])
+            self.query_one("#in-count", Static).update("[$forge-muted]Type a name or what it does: the list follows as you type.[/]")
 
     def show_results(self, results, error: str = "") -> None:
         self.results = results
         self._fill(error)
-        if self.query_one(PackageList).rows:
-            self.query_one(PackageList).focus()          # keys act again: 1-6, Enter on a row
+        if self._final and self.query_one(PackageList).rows:
+            self.query_one(PackageList).focus()          # after Enter: keys act again, Enter on a row; typing keeps the box
 
     @on(FilterBar.Changed)
     def _filter(self, e) -> None:

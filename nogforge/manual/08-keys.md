@@ -13,7 +13,7 @@
 | **Space** | tick or untick an update |
 | **t** · **n** | on Update: tick all · untick all |
 | **Enter** | the row's option: install, uninstall, promote, update this one · on nog Logs: open the log |
-| **Del** | remove the selected package (In-System) |
+| **Del** | uninstall the selected package (In-System) |
 | **Tab** / **Shift+Tab** | next / previous field or button |
 | **Esc** | leave a field, close a window |
 | **F1** | help on this screen |

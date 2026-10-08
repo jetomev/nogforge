@@ -1,6 +1,6 @@
 # Install
 
-Type a name or what it does (*photo*, *paint*, *calc*) and press **🔍 Search (Enter)** or Enter. nog searches the repositories and, through its AUR helper, the AUR.
+Type a name or what it does (*photo*, *paint*, *calc*): the list follows as you type — nog searches the repositories and, through its AUR helper, the AUR, half a second after your last keystroke (Enter searches at once).
 
 Only results with your words in their name or description are shown, best first: the exact name, then names that start with it, then names that contain it, then descriptions. At the same rank the repositories come before the AUR. (pacman also matches what a package *provides*, which is how "calc" used to find perl.)
 
