@@ -2,7 +2,19 @@
 
 *The live work list and the handoff between sessions. Newest work first. Updated after every step.*
 
-**Status: not started (README only).** Starts after alacrittyForge and bitlaForge match grubForge 2.0 (Javier, 2 Oct 2026: "after that, we are ready to start working on nogForge!!!").
+**Status (8 Oct 2026): 1.3.0 released and passed; 1.4.0 built and committed locally, waiting for Javier's test.** GitHub + AUR at release, after his pass.
+
+## v1.4.0 — the menu's keys from forgekit 0.10.0; History opens its menu; --hypeforge · 2026-10-08 (#24 #25 #26)
+*From Javier's first run inside hypeForge Settings. **Built, waiting for Javier's test; GitHub + AUR at release** (forgekit 0.10.0 must be on the AUR first).*
+- [x] **#24 F-14** Ctrl+U and Ctrl+Y did nothing. Cause, confirmed in a test: Ctrl+U was nogForge's own key without priority, and the search box (Textual's Input) takes Ctrl+U as "delete what I typed", so with the cursor in a search box (Install puts it there) it never reached the app; Ctrl+Y was never bound. Now forgekit 0.10.0 binds Ctrl + every underlined letter with priority; nogForge's own number and Ctrl bindings are gone
+- [x] **#25 F-15** numbers in bar order: 1 Dashboard, 2 In-System, 3 Install, 4 Update, **5 History (its menu)**, **6 Help (its menu)**; the empty Search box passes a number to the same entry; Activity/nog Logs bars say `5 l` / `5 a`; the bottom bar says **1-6 menu**; `h` still opens Activity
+- [x] **#26** `--hypeforge` / `--hypeForge` (forgekit's `add_hypeforge_argument`): no Quit, q / Ctrl+Q do nothing, Settings closes it; not in `--help` or the man page; documented in README, manual (Welcome, Keys), CLAUDE.md, changelog
+- [x] Also: **never closed while nog is working** (`before_quit` while the run window is open): in 1.3.0 Ctrl+Q during an update closed nogForge and nog with it (checked); Settings' close request now waits too
+- [x] Button labels checked ("Words (k)"): nothing to change
+- [x] Tests 42 → **52**, warnings 0 → 0; every new test seen failing with its fix taken out; screenshots regenerated (bottom bar `1-6 menu`, title 1.4.0)
+- [x] Version 1.4.0 everywhere (code, README, man page, changelog; 1.2.0 moved to docs/CHANGELOG.md); forgekit ≥ 0.10.0 in README + man page
+- [ ] **Javier's run**: `testing/20261008 - Test Matrix for nogForge v1-4-0.md` §2 (inside Settings) and §3 (on its own)
+- [ ] Release after his pass: push + signed tag, GitHub Release, AUR recipe (`depends` python-forgekit>=0.10.0), local makepkg, Javier installs, then AUR push; close #24 #25 #26
 
 ## Later — the run window (Javier, 2026-10-07 22:55, #23)
 - [ ] **#23** a nog run as a **progress bar** with the terminal **folded behind an arrow** (▲ closed / ▼ open); nog's yes/no and AUR questions as nogForge pop-ups — shape 1 needs nog to emit its questions as events (a nog issue when we take it); shape 2 (just the fold) is cheap. Javier: "another day"

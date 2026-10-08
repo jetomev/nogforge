@@ -2,6 +2,13 @@
 
 *Newest first. The README carries the two most recent releases; older ones are here.*
 
+### v1.2.0 — October 7, 2026 · Javier's four ([#17](https://github.com/jetomev/nogforge/issues/17), [#18](https://github.com/jetomev/nogforge/issues/18), [#19](https://github.com/jetomev/nogforge/issues/19), [#20](https://github.com/jetomev/nogforge/issues/20))
+
+- **Update:** a **Find** box narrows the Ready and Held lists as you type (`/` goes there); every ready row has **⬆ Update**, which hands nog that one name alone; **Tick All (t)** and **Untick All (n)**; a tick far down the list keeps the scroll and the highlight (#17).
+- **In-System:** **✕ Uninstall** instead of Remove, everywhere a person reads it; **⬆ Update** beside it when nog's plan has a newer version (#19). Downgrade waits for nog to offer one (a nog feature first).
+- The package list draws two buttons per row where a row has two; the mouse hovers and clicks each on its own.
+- Tests: 41 (was 37). Found on the way: a plain Textual app needs forgekit's colour variables to mount a `PackageList` in a test.
+
 ### v1.1.1 — October 4, 2026 · the AUR build works from a terminal
 
 The 1.1.0 AUR package didn't build on Javier's computer: three tests failed inside yay ([F-13, #15](https://github.com/jetomev/nogforge/issues/15)). The app itself was fine; a test's stand-in for nog decided "am I inside nogForge's run window?" by checking for a terminal. Our own builds had none; yay's build has one. The stand-in now goes by nog's steps file, the older tests never give it a keyboard, and our test builds now run with a terminal attached, the way yay does. Tests: 37, passing with and without a terminal.

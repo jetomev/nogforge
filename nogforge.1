@@ -1,6 +1,6 @@
 .\" nogforge.1 — nogForge man page
 .\" GNU GPL v3 — see LICENSE
-.TH NOGFORGE 1 "October 2026" "nogForge v1.1.1" "User Commands"
+.TH NOGFORGE 1 "October 2026" "nogForge v1.4.0" "User Commands"
 .
 .SH NAME
 nogforge \- packages the KognogOS way: what is installed, installing, and updates, in a terminal
@@ -63,8 +63,9 @@ Updates per source and tier, your packages per source and tier, the last
 things nog did, and the space old downloads take.
 .TP
 .B 2 \- In-System
-What is on this computer: badge, name, version, tier, repository, and a
-Remove button; locked rows say why.
+What is on this computer: badge, name, version, tier, repository, and an
+Uninstall button (with Update beside it when nog has a newer version);
+locked rows say why.
 .TP
 .B 3 \- Install
 Search the repositories and the AUR, best matches first, and install.
@@ -77,14 +78,21 @@ ones are handed to nog by name
 so only they go in. Afterwards, What changed compares versions before and
 after, and after a new kernel offers a restart.
 .TP
-.B 5 \- Activity, 6 \- nog Logs
-Everything nog ran, in plain words, and nog's own logs; Enter opens a run
-whole, as it appeared on screen.
+.B 5 \- History
+A menu of two screens: Activity (everything nog ran, in plain words) and
+nog Logs (nog's own logs; Enter opens a run whole, as it appeared on screen).
+.TP
+.B 6 \- Help
+A menu: the manual, every key, the license, About.
 .
 .SH KEYS
 .TP
 .B 1 \- 6
-Change screen.
+Go to a menu entry, left to right; History and Help open their menus.
+.TP
+.BR Ctrl +\fIletter\fR
+The underlined letter of a menu entry: Ctrl+D, Ctrl+I, Ctrl+N, Ctrl+U,
+Ctrl+Y (History), Ctrl+H (Help). Works from inside a search box too.
 .TP
 .B u
 Open Update; on Update, update the ticked ones.
@@ -99,13 +107,13 @@ Clean up old downloads (asks first).
 Tick or untick an update.
 .TP
 .B Enter
-The row's option: install, remove, promote; on nog Logs, open the run.
+The row's option: install, uninstall, promote; on nog Logs, open the run.
 .TP
 .BR / ,\  p
 Search; the Repositories window.
 .TP
 .BR F1 ,\  ? ,\  q
-Help on this screen; every key; quit.
+Help on this screen; every key; quit (never while nog is working).
 .
 .SH FILES
 .TP
@@ -116,7 +124,7 @@ One line per session, written when nogForge closes.
 nog's own logs, read by History.
 .
 .SH REQUIREMENTS
-nog 1.7.0 or newer, python-forgekit 0.6.0 or newer (with python-pyte),
+nog 1.7.0 or newer, python-forgekit 0.10.0 or newer (with python-pyte),
 python-textual, python-rich. Optional: archlinux-appstream-data (app names
 and badges).
 .
