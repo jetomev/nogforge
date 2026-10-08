@@ -8,7 +8,7 @@
 - [x] **#21** every search filters as you type: `FilterBar` posts `Searched` on `Input.Changed` — In-System at once, Install after `LIVE_WAIT` 0.5 s and from `LIVE_MIN` 2 characters (a timer reset per keystroke); the Search button removed; an emptied Install box clears the results
 - [x] **#22** one-row filter rows: `SearchInput`, labels, `Select` (`SelectCurrent` without its border, also on a console) and the inline buttons at height 1; the filter area 7 → 4 rows
 - [x] Tests 41 → **42** (the old search test types instead of clicking; new: In-System narrows without Enter, one nog search for five quick keystrokes, every drop-down one row, filter areas ≤ 4 rows); console preview of In-System clean
-- [ ] Release 1.3.0: tag, GitHub Release, AUR `nogforge`; Javier promotes it past nog's 7-day wait and runs the matrix
+- [x] **Released 1.3.0 — 2026-10-07 22:32**: tag `v1.3.0`, GitHub Release (Latest, signed assets, download byte-identical), AUR `nogforge` 1.3.0-1 (makepkg: 42 tests in check()). Javier: `nog update nogforge --promote nogforge`, then the matrix's section 2
 
 ## v1.2.0 — Javier's four · 2026-10-07 night (#17 #18 #19 #20)
 - [x] **#17** the list keeps its scroll and highlight on a redraw (`PackageList._redraw` restores `scroll_offset.y` after the rows are rebuilt)
@@ -16,7 +16,7 @@
 - [x] **#20** a Find box on Update (`/` goes there; both lists follow as you type) and **⬆ Update** on every ready row → `app.update_one(name)`: nog gets the one name (plus `--promote` for a held one)
 - [x] **#19** In-System: **✕ Uninstall** (not Remove) everywhere a person reads it; **⬆ Update** beside it when nog's plan has a newer version (`Row.option2`, two buttons per row, each with its own hover and click). **Downgrade: not yet — nog has no downgrade; a nog feature first**
 - [x] Tests 37 → **41** (untick all / tick all; find + update one; In-System's Update button; the scroll survives a redraw); README, manual (03, 05, 08, 01), changelog; version 1.2.0
-- [ ] Release 1.2.0: tag, GitHub Release, AUR `nogforge`; Javier's run on the desktop (update one package by itself, the way he wanted tonight)
+- [x] Released 1.2.0 — 22:10 (tag, Release, AUR 1.2.0-1); Javier's first look → #21 #22 → 1.3.0 twenty minutes later
 
 ## Backlog from Javier's use · 2026-10-07 (the sudoForge 1.0.1 update, through nogForge)
 - [ ] **#17 · Update page:** unticking a package with the mouse scrolls the list back to the top — with 52 updates every tick means scrolling down again. Fix: change only the row, or restore the scroll position and the highlighted row after the redraw
