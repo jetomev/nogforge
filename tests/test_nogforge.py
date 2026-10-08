@@ -989,7 +989,7 @@ class AppMaker:
 
 class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
     """Javier, 2026-10-08, running nogForge inside hypeForge Settings: Ctrl+U and Ctrl+Y did nothing
-    (F-14, #24); 5 and 6 jumped into History's two pages instead of opening History's menu like Help,
+    (F-14, #24; History's Ctrl key is S now, by Javier's letter rule); 5 and 6 jumped into History's two pages instead of opening History's menu like Help,
     and the bar's "1-6 screens" was confusing (F-15, #25)."""
 
     def shown(self, app) -> str:
@@ -1003,14 +1003,20 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
         return app.screen.menu_id if isinstance(app.screen, MenuDropdown) else None
 
     def test_every_underlined_letter_is_its_own(self):
+        """Javier's rule (forgekit 0.10.0): the title's first letter, else its next free one; Help H,
+        Quit Q. nogForge sets no letters itself; the real app's are checked here."""
         from forgekit import menu_key_clashes
         from forgekit.menu import accel
         from nogforge.app import NogForgeApp
-        self.assertEqual(menu_key_clashes(NogForgeApp.MENU), [], "two entries with one letter = a dead Ctrl key")
-        letters = {accel(m) for m in NogForgeApp.MENU}
+        self.assertFalse(any("acc" in m for m in NogForgeApp.MENU), "the rule picks the letters, not the app")
+        app = self.app()
+        letters = {m["id"]: accel(m) for m in app.MENU}
+        self.assertEqual(letters, {"dashboard": "d", "insystem": "i", "install": "n", "update": "u",
+                                   "history": "s", "help": "h", "quit": "q"})
+        self.assertEqual(menu_key_clashes(NogForgeApp.MENU), [], "every entry has a letter of its own")
         for b in NogForgeApp.BINDINGS:
             if b.key.startswith("ctrl+"):
-                self.assertNotIn(b.key.removeprefix("ctrl+"), letters, f"{b.key} would fight the menu's own")
+                self.assertNotIn(b.key.removeprefix("ctrl+"), letters.values(), f"{b.key} would fight the menu's own")
             self.assertNotIn(b.key, list("123456789"), "the numbers come from forgekit now, in bar order")
 
     async def test_ctrl_u_reaches_update_even_from_a_search_box(self):
@@ -1028,13 +1034,13 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(self.shown(app), "update", f"Ctrl+U from {page}'s search box opens Update")
                 self.assertEqual(self.lit(app), ["update"])
 
-    async def test_ctrl_y_and_5_open_historys_menu_not_a_page(self):
+    async def test_ctrl_s_and_5_open_historys_menu_not_a_page(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(0.5)
-            await pilot.press("ctrl+y")
+            await pilot.press("ctrl+s")
             await pilot.pause(0.3)
-            self.assertEqual(self.dropdown(app), "history", "Ctrl+Y opens History's menu")
+            self.assertEqual(self.dropdown(app), "history", "Ctrl+S opens History's menu")
             self.assertEqual(self.shown(app), "dashboard", "and doesn't change the page by itself")
             await pilot.press("escape")
             await pilot.pause(0.2)
@@ -1118,6 +1124,55 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.2)
             self.assertEqual(calls, [1])
 
+
+    async def test_5_again_closes_historys_menu_and_its_title_is_lit_while_open(self):
+        """Javier's second run: History, called by its number, didn't close on the second press, and
+        wasn't lit while open."""
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            title = app.query_one("#menu-history")
+            await pilot.press("5")
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "history")
+            self.assertTrue(title.has_class("open"), "History is lit while its menu is open")
+            await pilot.press("5")
+            await pilot.pause(0.3)
+            self.assertIsNone(self.dropdown(app), "5 again closes it")
+            self.assertEqual(len(app.screen_stack), 1)
+            self.assertFalse(title.has_class("open"))
+            self.assertEqual(self.shown(app), "dashboard")
+            await pilot.press("5")
+            await pilot.pause(0.3)
+            await pilot.press("6")                              # another number: Help's menu instead
+            await pilot.pause(0.3)
+            self.assertEqual(self.dropdown(app), "help")
+            self.assertEqual(len(app.screen_stack), 2, "one menu open, never two")
+            self.assertFalse(title.has_class("open"))
+
+    async def test_about_and_license_are_pages_and_esc_goes_back(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            app.action_go("update")
+            await pilot.pause(0.3)
+            for letter, page in (("a", "forge-about"), ("l", "forge-license")):
+                await pilot.press("6", letter)
+                await pilot.pause(0.3)
+                self.assertEqual(len(app.screen_stack), 1, f"{page}: a page, not a window")
+                self.assertEqual(self.shown(app), page)
+                self.assertEqual(self.lit(app), ["help"], "Help is lit while its page shows")
+                await pilot.press("escape")
+                await pilot.pause(0.3)
+                self.assertEqual(self.shown(app), "update", "Esc goes back where you came from")
+                self.assertEqual(self.lit(app), ["update"])
+            await pilot.press("5", "l", "6", "a")                # from one of History's pages
+            await pilot.pause(0.3)
+            self.assertEqual(self.lit(app), ["help"])
+            await pilot.press("escape")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "noglogs")
+            self.assertEqual(self.lit(app), ["history"], "History lit again for its page")
 
 class StartedByHypeForge(unittest.TestCase):
     """#26: hypeForge Settings starts nogForge with --hypeforge; people never need it, so --help and

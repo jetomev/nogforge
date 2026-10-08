@@ -198,9 +198,9 @@ class NogForgeApp(ForgeApp):
     MENU = [
         {"id": "dashboard", "title": "Dashboard", "kind": "section"},
         {"id": "insystem", "title": "In-System", "kind": "section"},
-        {"id": "install", "title": "Install", "kind": "section", "acc": "n"},
+        {"id": "install", "title": "Install", "kind": "section"},
         {"id": "update", "title": "Update", "kind": "section"},
-        {"id": "history", "title": "History", "kind": "menu", "acc": "y", "items": [
+        {"id": "history", "title": "History", "kind": "menu", "items": [
             ("Activity", "a", "show-activity"), ("nog Logs", "l", "show-noglogs")]},
         {"id": "help", "title": "Help", "kind": "menu", "items": [
             ("Manual", "m", "manual"), ("Keys", "k", "shortcuts"),
@@ -209,10 +209,12 @@ class NogForgeApp(ForgeApp):
     ]
     # 1.4.0 (Javier, 2026-10-08, #24 #25): the menu's keys come from forgekit 0.10.0. Every entry has a
     # number in bar order (1 Dashboard … 5 History, 6 Help; Quit has none) and Ctrl + its underlined
-    # letter, which works from inside a search box too. History and Help open their menus.
+    # letter, which works from inside a search box too. History and Help open their menus. The letters
+    # follow Javier's rule (forgekit's assign_accels: the title's first letter, else its next free one;
+    # Help H, Quit Q): D, I, N (Install: I is taken), U, S (History: H and I are taken)
     SHORTCUTS = [
         ("1-6", "Dashboard, In-System, Install, Update, History (its menu), Help (its menu)"),
-        ("Ctrl+letter", "the underlined letter in the menu bar: D, I, N, U, Y (History), H (Help)"),
+        ("Ctrl+letter", "the underlined letter in the menu bar: D, I, N, U, S (History), H (Help)"),
         ("u", "open Update · on Update: update the ticked ones"),
         ("r", "review packages (Install)"),
         ("h", "open History (Activity)"),

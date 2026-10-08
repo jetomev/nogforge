@@ -83,7 +83,8 @@ A menu of two screens: Activity (everything nog ran, in plain words) and
 nog Logs (nog's own logs; Enter opens a run whole, as it appeared on screen).
 .TP
 .B 6 \- Help
-A menu: the manual, every key, the license, About.
+A menu: the manual, every key, the license, About. License and About show
+as pages; Esc goes back. A menu's number pressed again closes it.
 .
 .SH KEYS
 .TP
@@ -92,7 +93,9 @@ Go to a menu entry, left to right; History and Help open their menus.
 .TP
 .BR Ctrl +\fIletter\fR
 The underlined letter of a menu entry: Ctrl+D, Ctrl+I, Ctrl+N, Ctrl+U,
-Ctrl+Y (History), Ctrl+H (Help). Works from inside a search box too.
+Ctrl+S (History), Ctrl+H (Help). Works from inside a search box too. Each
+letter is the first letter of the name, or the next free one when that is
+taken; Help is always H, Quit Q.
 .TP
 .B u
 Open Update; on Update, update the ticked ones.
