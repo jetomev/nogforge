@@ -4,6 +4,8 @@
 
 **Status (8 Oct 2026): 1.4.0 released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")
 
+
+- [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)
 ## v1.4.0 — the menu's keys from forgekit 0.10.0; History opens its menu; --hypeforge · 2026-10-08 (#24 #25 #26)
 *From Javier's first run inside hypeForge Settings. **released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")** (forgekit 0.10.0 must be on the AUR first).*
 - [x] **#24 F-14** Ctrl+U and Ctrl+Y did nothing (History's key is **Ctrl+S** now, by Javier's letter rule, round 2). Cause, confirmed in a test: Ctrl+U was nogForge's own key without priority, and the search box (Textual's Input) takes Ctrl+U as "delete what I typed", so with the cursor in a search box (Install puts it there) it never reached the app; Ctrl+Y was never bound. Now forgekit 0.10.0 binds Ctrl + every underlined letter with priority; nogForge's own number and Ctrl bindings are gone
