@@ -1174,6 +1174,73 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.shown(app), "noglogs")
             self.assertEqual(self.lit(app), ["history"], "History lit again for its page")
 
+    async def test_the_manual_and_keys_are_pages_at_the_right_place(self):
+        """Javier, 2026-10-08: "Keys and Manual as pages too"."""
+        from forgekit.manual import ManualView
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            app.action_go("update")
+            await pilot.pause(0.3)
+            await pilot.press("f1")                             # help on this screen: Update's page
+            await pilot.pause(0.5)
+            self.assertEqual(len(app.screen_stack), 1, "the manual is a page, not a window")
+            self.assertEqual(self.shown(app), "forge-manual")
+            self.assertEqual(app.query_one(ManualView).current, "update")
+            self.assertEqual(self.lit(app), ["help"])
+            await pilot.press("escape")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "update", "Esc goes back where you were")
+            await pilot.press("5", "l", "6", "m")               # Help ▸ Manual from nog Logs
+            await pilot.pause(0.5)
+            self.assertEqual(self.shown(app), "forge-manual")
+            self.assertEqual(self.lit(app), ["help"])
+            await pilot.press("escape")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "noglogs")
+            self.assertEqual(self.lit(app), ["history"])
+            await pilot.press("f1")                             # History's own page this time
+            await pilot.pause(0.5)
+            self.assertEqual(app.query_one(ManualView).current, "history")
+            await pilot.press("escape")
+            await pilot.pause(0.3)
+            await pilot.press("question_mark")                  # ? : the Keys list, also a page
+            await pilot.pause(0.5)
+            self.assertEqual(len(app.screen_stack), 1)
+            self.assertEqual(self.shown(app), "forge-keys")
+            self.assertEqual(self.lit(app), ["help"])
+            await pilot.press("escape")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "noglogs")
+
+    async def test_letter_keys_do_nothing_on_a_reading_page(self):
+        """While the manual or Keys were windows, nogForge's letters couldn't reach the app; as pages,
+        "c" on the manual must not start a clean-up, nor "u" leave it."""
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            started = []
+            app.hand_off = lambda action, names: started.append(action)
+            for open_keys, page in ((("f1",), "forge-manual"), (("question_mark",), "forge-keys"),
+                                    (("6", "a"), "forge-about")):
+                await pilot.press(*open_keys)
+                await pilot.pause(0.5)
+                self.assertEqual(self.shown(app), page)
+                for key in ("c", "u", "k", "r", "h", "t", "n", "p", "slash"):
+                    await pilot.press(key)
+                    await pilot.pause(0.05)
+                self.assertEqual(self.shown(app), page, f"{page}: letters leave the page alone")
+                await pilot.press("escape")
+                await pilot.pause(0.3)
+            self.assertEqual(started, [], "nothing was started")
+            await pilot.press("ctrl+u")                         # the menu's keys still move
+            await pilot.pause(0.3)
+            await pilot.press("f1")
+            await pilot.pause(0.5)
+            await pilot.press("ctrl+i")
+            await pilot.pause(0.3)
+            self.assertEqual(self.shown(app), "insystem", "Ctrl + a letter leaves the manual")
+
 class StartedByHypeForge(unittest.TestCase):
     """#26: hypeForge Settings starts nogForge with --hypeforge; people never need it, so --help and
     the man page leave it out."""

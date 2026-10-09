@@ -23,8 +23,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Static
 
 from forgekit import (
-    FORGE_CSS, GPL3_NOTICE, MENU_HINT, ChangeGroup, ForgeApp, ForgeModal, ManualScreen, Notice, ReviewDialog,
-    load_pages,
+    FORGE_CSS, GPL3_NOTICE, MENU_HINT, ChangeGroup, ForgeApp, ForgeModal, Notice, ReviewDialog, load_pages,
 )
 
 from . import __version__, catalogue, nog, records
@@ -536,7 +535,23 @@ class NogForgeApp(ForgeApp):
     def open_manual(self, page: str | None = None) -> None:
         pages = load_pages(MANUAL_DIR) if os.path.isdir(MANUAL_DIR) else []
         if pages:
-            self.push_screen(ManualScreen("nogForge manual", pages, start=page))
+            # 1.4.0 (Javier, 2026-10-08: "Keys and Manual as pages too"): a page in the main area,
+            # Help lit, Esc back to where you were
+            self.show_manual("nogForge manual", pages, start=page)
+
+    # the app's letter keys belong to its own pages; on forgekit's reading pages (the manual, Keys,
+    # License, About) they do nothing, as they did while those were windows: "c" there must not
+    # start a clean-up. Numbers, Ctrl + letter, ?, F1 and Esc still work
+    PAGE_QUIET = {"updates", "go", "clean", "check", "tick_all", "untick_all", "repositories", "find"}
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action in self.PAGE_QUIET:
+            try:
+                if (self.query_one("#forge-work").current or "").startswith("sec-forge-"):
+                    return False
+            except NoMatches:
+                pass
+        return super().check_action(action, parameters)
 
     def action_help_here(self) -> None:
         cur = self.query_one("#forge-work").current.removeprefix("sec-")

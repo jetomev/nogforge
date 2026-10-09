@@ -21,7 +21,7 @@ nogForge brings what [Pamac](https://github.com/manjaro/pamac), Manjaro's softwa
 
 ## What's in 1.4
 
-From Javier's first run of nogForge inside **hypeForge Settings** (8 October 2026): **every name in the menu bar has a number and a Ctrl key**, the same in every Forge app. **1–6** go left to right: Dashboard, In-System, Install, Update, **History**, **Help**; History and Help now both open their menus (5 used to jump straight into one of History's pages). **Ctrl** + the underlined letter works too, even from inside a search box: Ctrl+U (Update) used to do nothing, and so did Ctrl+Y (History), now **Ctrl+S** under Javier's letter rule: each name gets the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q. A menu closes when you press its number again, and its name is lit while it's open. **License** and **About** show as pages instead of windows; Esc goes back. The bottom bar says **1-6 menu**. And nogForge **never closes while nog is working**: a half-finished update could break the system.
+From Javier's first run of nogForge inside **hypeForge Settings** (8 October 2026): **every name in the menu bar has a number and a Ctrl key**, the same in every Forge app. **1–6** go left to right: Dashboard, In-System, Install, Update, **History**, **Help**; History and Help now both open their menus (5 used to jump straight into one of History's pages). **Ctrl** + the underlined letter works too, even from inside a search box: Ctrl+U (Update) used to do nothing, and so did Ctrl+Y (History), now **Ctrl+S** under Javier's letter rule: each name gets the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q. A menu closes when you press its number again, and its name is lit while it's open. The **manual**, the **Keys** list, **License** and **About** show as pages instead of windows; Esc goes back. The bottom bar says **1-6 menu**. And nogForge **never closes while nog is working**: a half-finished update could break the system.
 
 ## What's in 1.3
 
@@ -139,10 +139,10 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 
 - **Ctrl + the underlined letter works everywhere** ([F-14, #24](https://github.com/jetomev/nogforge/issues/24)): Ctrl+U (Update) did nothing while the cursor was in a search box, because the box used Ctrl+U for "delete what I typed"; Ctrl+Y (History) had never been set up. Both now come from [forgekit 0.10.0](https://github.com/jetomev/forge-suite), which gives every menu entry its Ctrl key, ahead of the box. History's key became **Ctrl+S** under **Javier's letter rule**, the same in every Forge app: each name gets the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q (H is Help and I is In-System, so History gets S; Install gets N).
 - **5 opens History's menu, 6 opens Help's** ([F-15, #25](https://github.com/jetomev/nogforge/issues/25)): 5 and 6 used to jump straight into History's two pages. Now the numbers go left to right along the menu bar, Help included, and the bottom bar says **1-6 menu** instead of "1-6 screens". **h** still opens Activity. From Javier's second run: **a menu's number pressed again closes it**, and **the open menu's name is lit**.
-- **License and About are pages** in the main area, not windows; Help is lit while they show, and Esc goes back to the page you came from.
+- **The manual, Keys, License and About are pages** in the main area, not windows (Javier: "yes, Keys and Manual as pages too"); Help is lit while they show, Esc goes back to the page you came from, and F1 still opens the manual at the page for where you are. On these pages nogForge's letter keys do nothing (so **c** there can't start a clean-up); numbers, Ctrl + letter, **?** and **F1** still work.
 - **`--hypeforge`** ([#26](https://github.com/jetomev/nogforge/issues/26)): how hypeForge Settings starts nogForge as one of its pages: no Quit, and Settings closes it. Left out of `--help` on purpose.
 - **Never closed while nog is working**: q, Ctrl+Q, Quit and Settings' request all wait until nog is done (before, Ctrl+Q during an update closed nogForge, and nog with it).
-- Needs forgekit 0.10.0. Tests: 54 (was 42), no warnings (was none).
+- Needs forgekit 0.10.0. Tests: 56 (was 42), no warnings (was none).
 
 ### v1.3.0 — October 7, 2026 · searches follow the typing; one-row filters ([#21](https://github.com/jetomev/nogforge/issues/21), [#22](https://github.com/jetomev/nogforge/issues/22))
 
@@ -154,7 +154,7 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 
 ## How this project is built
 
-A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (54 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
+A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (56 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
 
 ## Authors
 

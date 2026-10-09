@@ -11,7 +11,7 @@ It has the Dashboard, In-System, Install, Update (with your choices) and History
 - **3 Install**: find and install something new.
 - **4 Update**: nog's update plan: untick what waits, promote what can't.
 - **5 History**: opens its menu: **Activity** (everything nog ran, in plain words) or **nog Logs** (nog's own logs).
-- **6 Help**: opens its menu: this manual, the list of keys, the license, About. License and About show as pages here; Esc goes back.
+- **6 Help**: opens its menu: this manual, the list of keys, the license, About. Each shows as a page here, Help lit; Esc goes back. **F1** opens the manual at the page for where you are.
 
 Every name in the menu bar has a number (1 to 6, left to right) and an underlined letter: **Ctrl** + that letter goes there too, even while you're typing in a search box (Ctrl+U for Update, Ctrl+S for History). The letter is the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q. History and Help open their menus, and their name is lit while the menu is open; pick from it with the underlined letter or Enter, and press the number again to close it.
 
