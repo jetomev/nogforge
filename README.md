@@ -2,6 +2,8 @@
 
 > Packages, the KognogOS way: what's installed, searching and installing, and updates, in plain words, in a terminal. The decisions are **nog**'s; nogForge shows them.
 
+> 🖥 **Where it runs:** **Arch Linux and KognogOS** (it runs on top of nog) · **no desktop needed**: any desktop, or none · **works on a plain text console** (a tty).
+
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Platform: KognogOS / Arch](https://img.shields.io/badge/Platform-KognogOS%20%2F%20Arch-lightgrey.svg)
 ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)
