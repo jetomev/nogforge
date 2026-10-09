@@ -2,10 +2,10 @@
 
 *The live work list and the handoff between sessions. Newest work first. Updated after every step.*
 
-**Status (8 Oct 2026): 1.3.0 released and passed; 1.4.0 built and committed locally, waiting for Javier's test.** GitHub + AUR at release, after his pass.
+**Status (8 Oct 2026): 1.4.0 released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")
 
 ## v1.4.0 — the menu's keys from forgekit 0.10.0; History opens its menu; --hypeforge · 2026-10-08 (#24 #25 #26)
-*From Javier's first run inside hypeForge Settings. **Built, waiting for Javier's test; GitHub + AUR at release** (forgekit 0.10.0 must be on the AUR first).*
+*From Javier's first run inside hypeForge Settings. **released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")** (forgekit 0.10.0 must be on the AUR first).*
 - [x] **#24 F-14** Ctrl+U and Ctrl+Y did nothing (History's key is **Ctrl+S** now, by Javier's letter rule, round 2). Cause, confirmed in a test: Ctrl+U was nogForge's own key without priority, and the search box (Textual's Input) takes Ctrl+U as "delete what I typed", so with the cursor in a search box (Install puts it there) it never reached the app; Ctrl+Y was never bound. Now forgekit 0.10.0 binds Ctrl + every underlined letter with priority; nogForge's own number and Ctrl bindings are gone
 - [x] **#25 F-15** numbers in bar order: 1 Dashboard, 2 In-System, 3 Install, 4 Update, **5 History (its menu)**, **6 Help (its menu)**; the empty Search box passes a number to the same entry; Activity/nog Logs bars say `5 l` / `5 a`; the bottom bar says **1-6 menu**; `h` still opens Activity
 - [x] **#26** `--hypeforge` / `--hypeForge` (forgekit's `add_hypeforge_argument`): no Quit, q / Ctrl+Q do nothing, Settings closes it; not in `--help` or the man page; documented in README, manual (Welcome, Keys), CLAUDE.md, changelog
