@@ -76,10 +76,13 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 
 ## Requirements
 
+**Everything it needs** to build, run and test, with why, is in [docs/PACKAGING.md](docs/PACKAGING.md), measured from the code (the Forge Suite's [dependency audit](https://github.com/jetomev/forge-suite/issues/91), 2026-10-11).
+
 - KognogOS or Arch Linux
 - **nog 1.7.0 or newer** (nogForge reads its `--json` answers and its steps, and hands it the ticked updates by name)
-- Python 3.11+, `python-textual`, `python-rich`, [`python-forgekit`](https://github.com/jetomev/forgekit) 0.10.0+ (with `python-pyte`)
+- Python 3.11+, `python-textual`, `python-rich`, [`python-forgekit`](https://github.com/jetomev/forge-suite/tree/main/forgekit) 0.10.0+ (with `python-pyte`)
 - `archlinux-appstream-data` for app names and badges (optional; without it every package gets the plain badge)
+- `flatpak`, `snapd` (optional): their pages show when they're installed
 
 ## Installation
 
