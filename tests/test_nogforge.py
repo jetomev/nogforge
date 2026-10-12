@@ -1310,6 +1310,7 @@ class NeverClosedWhileNogWorks(AppMaker, StandIn, unittest.IsolatedAsyncioTestCa
                 proc = app.screen.query_one(TerminalPane).proc
                 app.screen_stack[-1].dismiss(None)               # nog done, its window closed
                 await pilot.pause(0.3)
-                proc.wait(timeout=5)                             # the stand-in is gone, not left running
+                proc.wait(timeout=20)                            # the stand-in is gone, not left running (20 s: a busy
+                                                                 # build machine took over 5, 2026-10-11, F-16)
                 app.host_quit()
                 self.assertEqual(calls, [1], "then Settings' request closes it")
