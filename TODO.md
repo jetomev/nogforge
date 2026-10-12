@@ -8,7 +8,7 @@
 - [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)
 ## 2026-10-11 · What it needs, measured
 - [x] **What it needs, measured** (2026-10-11, forge-suite#91): `docs/PACKAGING.md` + `tests/test_needs.py`; recipe + optional flatpak, snapd → **1.4.0-2**
-- [ ] AUR push of 1.4.0-2 after Javier's local test
+- [x] AUR 1.4.0-2 (`3fc9891`) after Javier's local test
 - [ ] **F-16 #28** a test gave a stopped stand-in 5 s (flaky on a busy machine) → 20 s, committed; ships with the next release
 
 ## At the next release
