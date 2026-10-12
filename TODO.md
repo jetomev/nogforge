@@ -6,6 +6,10 @@
 
 
 - [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)
+## 2026-10-11 · What it needs, measured
+- [x] **What it needs, measured** (2026-10-11, forge-suite#91): `docs/PACKAGING.md` + `tests/test_needs.py`; recipe + optional flatpak, snapd → **1.4.0-2**
+- [ ] AUR push of 1.4.0-2 after Javier's local test
+
 ## At the next release
 - [ ] **The AUR description, at the next release** (Javier, 2026-10-09): the AUR `pkgdesc` (and `.SRCINFO`) gets the same "where it runs" words as the README, GitHub About and kognogos.org — distribution · desktop · plain text console. Not pushed on its own: AUR pushes stay one per proven version.
 
