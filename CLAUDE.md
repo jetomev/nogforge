@@ -30,7 +30,6 @@ A [forgekit](https://github.com/jetomev/forgekit) (Python/Textual) terminal app 
 - README accurate top to bottom; roadmap and changelog newest first.
 - Findings F-n, each an issue opened with a full explanation and closed with one.
 - After every push: a Vault entry in `~/Google Drive/Rullynastre/nogForge/`.
-- Plain words throughout. The readers are not engineers.
 
 ## Release discipline
 `~/.claude/rules/release.md`; version in every surface; signed tags; GitHub before the AUR, and **Javier's test of the locally built package before the AUR push** (one push per proven version — 2026-10-07); forgekit (and nog) on the AUR at the version nogForge needs before nogForge ships.
