@@ -6,6 +6,9 @@
 
 
 - [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)
+## 2026-10-12 · CLAUDE.md keeps only this project's own rules
+- [x] **One rule, one level** (Javier, 2026-10-12): the 'never the persona names here' line and the repeated 'plain words' rule removed. Commit pushed the same night.
+
 ## 2026-10-11 · What it needs, measured
 - [x] **What it needs, measured** (2026-10-11, forge-suite#91): `docs/PACKAGING.md` + `tests/test_needs.py`; recipe + optional flatpak, snapd → **1.4.0-2**
 - [x] AUR 1.4.0-2 (`3fc9891`) after Javier's local test
