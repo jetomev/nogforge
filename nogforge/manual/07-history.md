@@ -1,6 +1,6 @@
 # History
 
-The **History** menu (**5** or **Ctrl+S**) has two screens; pick one with its letter. Press 5 again to close the menu.
+The **History** menu (**6** or **Ctrl+S**) has two screens; pick one with its letter. Press 6 again to close the menu.
 
 ## Activity (5, then a)
 

@@ -74,7 +74,7 @@ class Row:
 
 
 def repository(p: Package) -> str:
-    return "AUR" if p.aur else (p.source or "—")
+    return p.where
 
 
 class PackageHeader(Static):

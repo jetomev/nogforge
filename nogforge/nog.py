@@ -1,4 +1,4 @@
-"""Talking to nog (v0.1.0).
+"""Talking to nog (v0.1.0; nog 2.0.0's every-source answers in 1.5.0).
 
 nog does the thinking; nogForge shows it (Javier, 3 Oct 2026). Everything
 here asks nog ≥ 1.7.0 for JSON — the installed list, search, the update plan —
@@ -73,23 +73,49 @@ class Package:
     when: int = 0
     required_by: list[str] = field(default_factory=list)
     protected: str | None = None
+    install_as: str = ""     # nog 2.0.0: the exact name to give `nog install` (flatpak/<id>, snap/<name>)
+    remove_as: str = ""      # nog 2.0.0: the name `nog remove` takes (a Flatpak's app ID)
 
     @property
     def aur(self) -> bool:
         return self.source == "aur"
+
+    @property
+    def flatpak(self) -> bool:
+        return self.source == "flatpak"
+
+    @property
+    def snap(self) -> bool:
+        return self.source == "snap"
+
+    @property
+    def where(self) -> str:
+        """The source as a person reads it in a column."""
+        return {"aur": "AUR", "flatpak": "Flatpak", "snap": "Snap"}.get(self.source, self.source or "—")
 
 
 def installed() -> list[Package]:
     d = ask("list")
     return [Package(p["name"], p["version"], p.get("description", ""), p.get("tier", 3), p.get("source", ""),
                     p.get("explicit", True), True, p.get("size", 0), p.get("installed", 0),
-                    p.get("required_by") or [], p.get("protected")) for p in d.get("packages", [])]
+                    p.get("required_by") or [], p.get("protected"), remove_as=p.get("remove_as") or p["name"])
+            for p in d.get("packages", [])]
 
 
 def search(query: str) -> list[Package]:
     d = ask("search", query, timeout=120)
     return [Package(p["name"], p["version"], p.get("description", ""), p.get("tier", 3), p.get("source", ""),
-                    installed=p.get("installed", False)) for p in d.get("results", [])]
+                    installed=p.get("installed", False), install_as=p.get("install_as") or "")
+            for p in d.get("results", [])]
+
+
+def maintenance() -> dict:
+    """nog 2.0.0's maintenance report (`nog clean --json`): what each source
+    leaves behind, per category, nothing removed. An older nog has no report."""
+    d = ask("clean", timeout=120)
+    if d.get("kind") != "clean":
+        raise NogError("This nog has no maintenance report; nogForge's Maintenance page needs nog 2.0.0 or newer.")
+    return d
 
 
 def plan(keep: list[str] | None = None, promote: list[str] | None = None) -> dict:

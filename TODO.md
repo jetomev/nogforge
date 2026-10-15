@@ -2,7 +2,20 @@
 
 *The live work list and the handoff between sessions. Newest work first. Updated after every step.*
 
-**Status (8 Oct 2026): 1.4.0 released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")
+**Status (15 Oct 2026): 1.5.0 built the night of the 14th, on nog 2.0.0 (also built that night), waits on Javier's run of both; then GitHub, then the AUR (nog 2.0.0 first, then nogforge with `nog>=2.0.0`). 1.4.0 released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!").
+
+## 2026-10-15 · 1.5.0 — every source, and Maintenance (nog's C6 half of #7, on nog 2.0.0)
+- [x] **Flatpak apps and snaps as rows**: `Package.install_as` / `remove_as` / `where` from nog 2.0.0's `list --json` and `search --json`; In-System shows them (a base snap Locked: "the system under the snaps"), Install finds them; the review says who asks (flatpak / nog for a snap); `nog install flatpak/<id>`, `nog remove <app-id>`; the Repositories window ticks Flatpak and Snap; the Dashboard counts them from nog's rows (an older nog: the counters)
+- [x] **Maintenance page** (menu 5, Ctrl+M; History 6, Help 7; `1-7 menu`): `nog.maintenance()` = `nog clean --json`, loaded in the background at start and after every change; a CheckList of categories with sizes (empty ones not tickable), the highlighted one explained underneath; **Clean Up the Ticked Ones (c)** → `hand_off("clean", ["--only", "a,b"])` (nog asks once in the run window; pacman/flatpak ask with their lists; never `--yes`); **Look Again (k)**; `c` from anywhere opens the page; the Dashboard's Space box says how much could go and its Clean Up opens the page
+- [x] **Fixed (found by the new test)**: Install's `show_results` focused its list after the post-change re-search even when another page was shown; Del on In-System then reached the hidden Install list and opened an install review. Focus only while Install is the page shown
+- [x] History's verbs: reinstall, lock, unlock (promote with --promote), tier, info, status, history, keep
+- [x] Tests 56 → **61**, 0 warnings: the rows carry nog's names; the Dashboard counts from the list; a Flatpak installed by its exact name and removed by its ID, a base snap locked; Maintenance cleans up only the ticked categories; the renumbered menu (5/6/7) everywhere; `c` opens Maintenance, runs nothing unticked
+- [x] Docs: README (What's in 1.5, keys 1–7, requirements nog 2.0.0, roadmap, changelog; 1.3.0 moved to docs/), man page, CLAUDE.md, manual (01, 02, 03, 04, new 06-maintain, 08), PACKAGING (nog >= 2.0.0), version 1.5.0
+- [ ] **Javier's run** — `testing/20261015 - Test Matrix for nogForge v1-5-0.md`, on nog 2.0.0rc1 (nog's bench first)
+- [ ] After his pass and nog 2.0.0 on the AUR: tag, GitHub Release, AUR 1.5.0-1 with `nog>=2.0.0` (after his local install); screenshots regenerated (`docs/screenshots/generate.py` — not redone tonight: the Maintenance page needs a real capture); kognogos.org card; Vault; memory
+- [ ] Not in 1.5.0: Flatpak/snap *updates* already flow through Update (nog's plan rows); a Maintenance category's full name list (10 shown); Settings (next)
+
+
 
 
 - [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)

@@ -16,6 +16,7 @@ from pathlib import Path
 from nogforge import catalogue, nog, records
 from nogforge.nog import NogError, Package
 from nogforge.ui.packages import filtered, installed_row, search_row
+from nogforge.ui.screens import MaintenanceScreen
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -56,6 +57,41 @@ PLAN = {"nog": "1.6.0", "kind": "plan",
                   "kept_back": False, "coupled_to": None}],
         "unknown": [], "holds": {"tier1_days": 30, "tier2_days": 15, "tier3_days": 7}}
 
+CLEAN = {"nog": "2.0.0", "kind": "clean", "total_bytes": 5_200_000_000, "cache": {"files": 4216, "bytes": 17_654_338_424, "kept_files": 1599, "kept_bytes": 12_675_810_549},
+         "categories": [
+    {"id": "cache", "what": "pacman's download cache: 515 old versions of packages", "items": 515, "bytes": 4_900_000_000,
+     "names": [], "how": "removed by nog; root is needed"},
+    {"id": "orphans", "what": "packages installed as dependencies that nothing needs any more: 2", "items": 2,
+     "bytes": 300_000_000, "names": ["go", "go-tools"], "how": "pacman -Rns: pacman shows the list and asks first"},
+    {"id": "aur", "what": "yay's build trees from AUR packages: 0", "items": 0, "bytes": 0, "names": [],
+     "how": "removed by nog; your own files, so no password"},
+    {"id": "flatpak", "what": "Flatpak runtimes no installed app uses: 1", "items": 1, "bytes": 1_100_000_000,
+     "names": ["org.gnome.Platform/x86_64/51"], "how": "flatpak uninstall --unused: flatpak shows its list and asks first"},
+    {"id": "snap", "what": "old snap revisions snapd kept after updates: 1", "items": 1, "bytes": 66_000_000,
+     "names": ["core20 (revision 2866)"], "how": "snap remove --revision, one by one; root is needed"},
+]}
+# nog 2.0.0: Flatpak apps and snaps among the installed rows, and in a search
+LIST_200 = {"nog": "2.0.0", "kind": "list", "packages": LIST["packages"] + [
+    {"name": "com.github.tchx84.Flatseal", "version": "2.4.1", "description": "Flatseal", "tier": 3, "source": "flatpak",
+     "remote": "flathub", "runtime": "org.gnome.Platform/x86_64/50", "explicit": True, "size": 1400000, "installed": 0,
+     "groups": [], "required_by": [], "protected": None, "remove_as": "com.github.tchx84.Flatseal"},
+    {"name": "hello", "version": "2.10", "description": "a snap", "tier": 3, "source": "snap", "revision": "42",
+     "tracking": "latest/stable", "publisher": "canonical", "base": False, "explicit": True, "size": 106496,
+     "installed": 0, "groups": [], "required_by": [], "protected": None, "remove_as": "hello"},
+    {"name": "core20", "version": "20260901", "description": "the system under the snaps (a base snap)", "tier": 3,
+     "source": "snap", "revision": "2922", "tracking": "latest/stable", "publisher": "canonical", "base": True,
+     "explicit": False, "size": 66883584, "installed": 0, "groups": [], "required_by": [],
+     "protected": "the system under the snaps", "remove_as": "core20"},
+]}
+SEARCH_200 = {"nog": "2.0.0", "kind": "search", "query": "calculator", "results": [
+    {"name": "gnome-calculator", "version": "51.1-1", "description": "GNOME Scientific calculator", "source": "extra",
+     "installed": False, "tier": 3},
+    {"name": "org.gnome.Calculator", "version": "51.1", "description": "Calculator", "source": "flatpak", "remote": "flathub",
+     "installed": False, "tier": 3, "install_as": "flatpak/org.gnome.Calculator"},
+    {"name": "calculiva", "version": "0.2.0", "description": "Offline quantity calculator CLI", "source": "snap",
+     "publisher": "calculiva", "classic": False, "installed": False, "tier": 3, "install_as": "snap/calculiva"},
+], "sources": {"flatpak": "checked", "snap": "checked", "problems": []}}
+
 STAND_IN = '''#!/usr/bin/env python3
 import json, sys, os
 data = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
@@ -75,7 +111,7 @@ class StandIn(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
         data = self.dir / "answers.json"
-        data.write_text(json.dumps({"list": LIST, "search": SEARCH, "update": PLAN}))
+        data.write_text(json.dumps({"list": LIST, "search": SEARCH, "update": PLAN, "clean": CLEAN}))
         b = self.dir / "nog"
         b.write_text(STAND_IN)
         b.chmod(0o755)
@@ -231,8 +267,8 @@ def pick(pl, name):
     pl.highlighted = [r.package.name for r in pl.rows].index(name)
 
 
-# every page, by its keys (1.4.0: 5 opens History's menu; a = Activity, l = nog Logs)
-PAGE_KEYS = (("1",), ("2",), ("3",), ("4",), ("5", "a"), ("5", "l"))
+# every page, by its keys (1.5.0: 5 is Maintenance, 6 opens History's menu; a = Activity, l = nog Logs)
+PAGE_KEYS = (("1",), ("2",), ("3",), ("4",), ("5",), ("6", "a"), ("6", "l"))
 
 
 class Screens(StandIn, unittest.IsolatedAsyncioTestCase):
@@ -838,8 +874,10 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             await pilot.pause(0.3)
             self.assertFalse(app.restarted)
 
-    async def test_c_always_cleans_up_k_checks_for_updates(self):
-        # Javier, 3 Oct: "c" said "check again" on Update and cleaned up on the Dashboard: confusing
+    async def test_c_opens_maintenance_and_k_checks_for_updates(self):
+        # Javier, 3 Oct: "c" said "check again" on Update and cleaned up on the Dashboard: confusing.
+        # 1.5.0: c opens Maintenance (nog 2.0.0's clean asks which categories — a question for a page),
+        # and on Maintenance c cleans up the ticked ones; nothing runs with nothing ticked
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await self.open_update(app, pilot)
@@ -848,8 +886,11 @@ class Choices(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await self.until(pilot, lambda: app.plan is not None), "k asked nog again")
             self.assertEqual(self.ran(), [], "checking changes nothing")
             await pilot.press("c")
-            self.assertTrue(await self.until(pilot, lambda: bool(self.ran())))
-            self.assertTrue(self.ran()[0].startswith("clean"), "c is clean up on Update too")
+            await pilot.pause(0.4)
+            self.assertEqual(app.query_one("#forge-work").current, "sec-maintain", "c opens Maintenance")
+            await pilot.press("c")
+            await pilot.pause(0.4)
+            self.assertEqual(self.ran(), [], "nothing ticked: nothing runs")
 
     async def test_promote_makes_it_ready_then_the_update_takes_it(self):
         # Javier, 3 Oct: "shouldn't promote just bring the package to due, so it enters the ready list?"
@@ -1011,7 +1052,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
         self.assertFalse(any("acc" in m for m in NogForgeApp.MENU), "the rule picks the letters, not the app")
         app = self.app()
         letters = {m["id"]: accel(m) for m in app.MENU}
-        self.assertEqual(letters, {"dashboard": "d", "insystem": "i", "install": "n", "update": "u",
+        self.assertEqual(letters, {"dashboard": "d", "insystem": "i", "install": "n", "update": "u", "maintain": "m",
                                    "history": "s", "help": "h", "quit": "q"})
         self.assertEqual(menu_key_clashes(NogForgeApp.MENU), [], "every entry has a letter of its own")
         for b in NogForgeApp.BINDINGS:
@@ -1034,7 +1075,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(self.shown(app), "update", f"Ctrl+U from {page}'s search box opens Update")
                 self.assertEqual(self.lit(app), ["update"])
 
-    async def test_ctrl_s_and_5_open_historys_menu_not_a_page(self):
+    async def test_ctrl_s_and_6_open_historys_menu_not_a_page(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(0.5)
@@ -1044,31 +1085,31 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.shown(app), "dashboard", "and doesn't change the page by itself")
             await pilot.press("escape")
             await pilot.pause(0.2)
-            await pilot.press("5")
+            await pilot.press("6")
             await pilot.pause(0.3)
-            self.assertEqual(self.dropdown(app), "history", "5 opens History's menu, like 6 opens Help's")
+            self.assertEqual(self.dropdown(app), "history", "6 opens History's menu, like 7 opens Help's")
             self.assertEqual(self.shown(app), "dashboard")
             await pilot.press("l")                              # nog Logs, from the menu
             await pilot.pause(0.3)
             self.assertEqual(self.shown(app), "noglogs")
             self.assertEqual(self.lit(app), ["history"], "History is lit for both of its pages")
-            await pilot.press("5", "a")
+            await pilot.press("6", "a")
             await pilot.pause(0.3)
             self.assertEqual(self.shown(app), "activity")
             self.assertEqual(self.lit(app), ["history"])
             app.action_go("install")                            # the empty search box: the number still works
             await pilot.pause(0.3)
             self.assertEqual(app.focused.id, "in-find")
-            await pilot.press("5")
+            await pilot.press("6")
             await pilot.pause(0.3)
-            self.assertEqual(self.dropdown(app), "history", "5 from the empty Search box: History's menu too")
+            self.assertEqual(self.dropdown(app), "history", "6 from the empty Search box: History's menu too")
             self.assertEqual(app.query_one("#in-find").value, "", "and nothing typed into the box")
 
-    async def test_6_opens_help_and_the_others_keep_their_pages(self):
+    async def test_7_opens_help_and_the_others_keep_their_pages(self):
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(0.5)
-            await pilot.press("6")
+            await pilot.press("7")
             await pilot.pause(0.3)
             self.assertEqual(self.dropdown(app), "help")
             await pilot.press("escape")
@@ -1083,13 +1124,13 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.3)
                 self.assertEqual(self.shown(app), page, key)
 
-    async def test_the_bar_says_1_6_menu(self):
+    async def test_the_bar_says_1_7_menu(self):
         from forgekit import HintBar
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(0.5)
             text = str(app.query_one(HintBar).render())
-            self.assertIn("1-6", text)
+            self.assertIn("1-7", text)
             self.assertIn("menu", text)
             self.assertNotIn("screens", text)
             self.assertNotIn("{menu}", text)
@@ -1107,8 +1148,8 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.2)
             app.action_act("quit")
             self.assertEqual(calls, [], "Q, Ctrl+Q and the Quit action do nothing: Settings closes nogForge")
-            self.assertEqual(app._menu_count, 6, "the numbers stay the same: Quit never had one")
-            await pilot.press("6")
+            self.assertEqual(app._menu_count, 7, "the numbers stay the same: Quit never had one")
+            await pilot.press("7")
             await pilot.pause(0.3)
             self.assertEqual(self.dropdown(app), "help")
 
@@ -1125,26 +1166,26 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(calls, [1])
 
 
-    async def test_5_again_closes_historys_menu_and_its_title_is_lit_while_open(self):
+    async def test_6_again_closes_historys_menu_and_its_title_is_lit_while_open(self):
         """Javier's second run: History, called by its number, didn't close on the second press, and
         wasn't lit while open."""
         app = self.app()
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(0.5)
             title = app.query_one("#menu-history")
-            await pilot.press("5")
+            await pilot.press("6")
             await pilot.pause(0.3)
             self.assertEqual(self.dropdown(app), "history")
             self.assertTrue(title.has_class("open"), "History is lit while its menu is open")
-            await pilot.press("5")
+            await pilot.press("6")
             await pilot.pause(0.3)
-            self.assertIsNone(self.dropdown(app), "5 again closes it")
+            self.assertIsNone(self.dropdown(app), "6 again closes it")
             self.assertEqual(len(app.screen_stack), 1)
             self.assertFalse(title.has_class("open"))
             self.assertEqual(self.shown(app), "dashboard")
-            await pilot.press("5")
+            await pilot.press("6")
             await pilot.pause(0.3)
-            await pilot.press("6")                              # another number: Help's menu instead
+            await pilot.press("7")                              # another number: Help's menu instead
             await pilot.pause(0.3)
             self.assertEqual(self.dropdown(app), "help")
             self.assertEqual(len(app.screen_stack), 2, "one menu open, never two")
@@ -1157,7 +1198,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             app.action_go("update")
             await pilot.pause(0.3)
             for letter, page in (("a", "forge-about"), ("l", "forge-license")):
-                await pilot.press("6", letter)
+                await pilot.press("7", letter)
                 await pilot.pause(0.3)
                 self.assertEqual(len(app.screen_stack), 1, f"{page}: a page, not a window")
                 self.assertEqual(self.shown(app), page)
@@ -1166,7 +1207,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
                 await pilot.pause(0.3)
                 self.assertEqual(self.shown(app), "update", "Esc goes back where you came from")
                 self.assertEqual(self.lit(app), ["update"])
-            await pilot.press("5", "l", "6", "a")                # from one of History's pages
+            await pilot.press("6", "l", "7", "a")                # from one of History's pages
             await pilot.pause(0.3)
             self.assertEqual(self.lit(app), ["help"])
             await pilot.press("escape")
@@ -1191,7 +1232,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             await pilot.press("escape")
             await pilot.pause(0.3)
             self.assertEqual(self.shown(app), "update", "Esc goes back where you were")
-            await pilot.press("5", "l", "6", "m")               # Help ▸ Manual from nog Logs
+            await pilot.press("6", "l", "7", "m")               # Help ▸ Manual from nog Logs
             await pilot.pause(0.5)
             self.assertEqual(self.shown(app), "forge-manual")
             self.assertEqual(self.lit(app), ["help"])
@@ -1222,7 +1263,7 @@ class MenuKeys(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
             started = []
             app.hand_off = lambda action, names: started.append(action)
             for open_keys, page in ((("f1",), "forge-manual"), (("question_mark",), "forge-keys"),
-                                    (("6", "a"), "forge-about")):
+                                    (("7", "a"), "forge-about")):
                 await pilot.press(*open_keys)
                 await pilot.pause(0.5)
                 self.assertEqual(self.shown(app), page)
@@ -1314,3 +1355,117 @@ class NeverClosedWhileNogWorks(AppMaker, StandIn, unittest.IsolatedAsyncioTestCa
                                                                  # build machine took over 5, 2026-10-11, F-16)
                 app.host_quit()
                 self.assertEqual(calls, [1], "then Settings' request closes it")
+
+
+class EverySource(StandIn, unittest.IsolatedAsyncioTestCase):
+    """1.5.0 on nog 2.0.0: Flatpak apps and snaps among the rows, installed by their exact name
+    (`install_as`), removed by the name nog takes (`remove_as`), and the Maintenance page on
+    nog's report (`nog clean --json`), cleaning up the ticked categories only."""
+
+    def setUp(self):
+        super().setUp()
+        Path(os.environ["NOGFORGE_TEST_DATA"]).write_text(
+            json.dumps({"list": LIST_200, "search": SEARCH_200, "update": PLAN, "clean": CLEAN}))
+
+    def app(self):
+        from nogforge.app import NogForgeApp
+        a = NogForgeApp(apps=self.apps, logs=self.logs, cache_dir=self.cache)
+        a.ran = []
+        a.run_in_terminal = lambda cmd, env: (a.ran.append(cmd[1:]), 0)[1]
+        return a
+
+    async def until(self, pilot, cond, seconds=8.0):
+        end = time.time() + seconds
+        while not cond() and time.time() < end:
+            await pilot.pause(0.1)
+        return cond()
+
+    def test_the_rows_carry_nogs_names(self):
+        pk = {p.name: p for p in nog.installed()}
+        self.assertEqual(pk["com.github.tchx84.Flatseal"].remove_as, "com.github.tchx84.Flatseal")
+        self.assertEqual(pk["com.github.tchx84.Flatseal"].where, "Flatpak")
+        self.assertTrue(pk["hello"].snap)
+        self.assertEqual(pk["core20"].protected, "the system under the snaps", "a base snap is locked")
+        self.assertEqual(pk["steam"].remove_as, "steam", "a package: its own name")
+        res = {p.name: p for p in nog.search("calculator")}
+        self.assertEqual(res["org.gnome.Calculator"].install_as, "flatpak/org.gnome.Calculator")
+        self.assertEqual(res["calculiva"].install_as, "snap/calculiva")
+        self.assertEqual(res["gnome-calculator"].install_as, "", "a package: the source/name rule as before")
+        self.assertEqual(nog.maintenance()["categories"][1]["names"], ["go", "go-tools"])
+
+    async def test_the_dashboard_counts_flatpaks_and_snaps_from_nogs_list(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None and app.maint is not None))
+            await pilot.pause(0.3)
+            def text(wid):
+                w = app.query_one(wid)
+                return "\n".join(w.render_line(y).text for y in range(w.size.height))
+            # 4 chosen packages + Flatseal + hello (core20 came along): 6, from nog's rows, not this computer's counters
+            self.assertRegex(text("#db-yours"), r"Total\s+6\s")
+            self.assertIn("Flatpak", text("#db-yours"))
+            self.assertIn("Could go", text("#db-space"))
+            self.assertIn("old downloads", text("#db-space"))
+
+    async def test_a_flatpak_is_installed_by_its_exact_name_and_removed_by_its_id(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("3")
+            await pilot.pause(0.2)
+            for ch in "calculator":
+                await pilot.press(ch)
+            await pilot.press("enter")
+            self.assertTrue(await self.until(pilot, lambda: bool(app.query_one("#in-list").rows)))
+            pl = app.query_one("#in-list")
+            pick(pl, "org.gnome.Calculator")
+            self.assertEqual(pl.rows[pl.highlighted].package.where, "Flatpak")
+            await pilot.press("enter")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "ReviewDialog"))
+            await pilot.click("#go")
+            self.assertTrue(await self.until(pilot, lambda: bool(app.ran)))
+            self.assertEqual(app.ran, [["install", "flatpak/org.gnome.Calculator"]], "nog's install_as, never the bare ID")
+            app.ran.clear()
+            await pilot.press("2")
+            await pilot.pause(0.4)
+            pl = app.query_one("#is-list")
+            pick(pl, "com.github.tchx84.Flatseal")
+            await pilot.press("delete")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "ReviewDialog"))
+            await pilot.click("#go")
+            self.assertTrue(await self.until(pilot, lambda: bool(app.ran)))
+            self.assertEqual(app.ran, [["remove", "com.github.tchx84.Flatseal"]])
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ != "ReviewDialog"))
+            app.query_one("#is-show").value = "all"          # core20 came along (a base): under All
+            await pilot.pause(0.4)
+            pick(pl, "core20")
+            await pilot.press("delete")
+            await pilot.pause(0.4)
+            self.assertNotEqual(type(app.screen).__name__, "ReviewDialog",
+                "a base snap is locked: no review (and Install's hidden list must not take the keyboard after a change)")
+
+    async def test_maintenance_cleans_up_only_the_ticked_categories(self):
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.maint is not None))
+            await pilot.press("5")
+            await pilot.pause(0.4)
+            self.assertEqual(app.query_one("#forge-work").current, "sec-maintain")
+            lst = app.query_one("#mt-list")
+            self.assertEqual(lst.option_count, 5)
+            self.assertTrue(lst.get_option_at_index(2).disabled, "a category with nothing is not tickable")
+            self.assertTrue(app.query_one("#mt-run").disabled, "nothing ticked: no clean-up")
+            await pilot.press("c")
+            await pilot.pause(0.3)
+            self.assertEqual(app.ran, [], "c with nothing ticked runs nothing")
+            lst.focus()
+            lst.highlighted = 0
+            await pilot.press("space")                       # cache
+            await pilot.press("down", "down", "down", "space")   # flatpak (aur, disabled, is skipped by the list? no: index 3)
+            await pilot.pause(0.3)
+            ticked = app.query_one(MaintenanceScreen).ticked()
+            self.assertIn("cache", ticked)
+            await pilot.press("c")
+            self.assertTrue(await self.until(pilot, lambda: bool(app.ran)))
+            self.assertEqual(app.ran[0][:2], ["clean", "--only"])
+            self.assertEqual(set(app.ran[0][2].split(",")), set(ticked), "exactly the ticked categories, nothing else")

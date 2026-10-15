@@ -2,7 +2,7 @@
 
 nogForge is KognogOS's package app: your installed programs, searching and installing new ones, and updates, in plain words. It works with **nog**, KognogOS's package manager, and shows what nog decides: which tier a package is in, when an update is ready, and what must stay together. nogForge never decides those itself.
 
-It has the Dashboard, In-System, Install, Update (with your choices) and History. Settings come next, and Flatpak and Snap installs after that.
+It has the Dashboard, In-System, Install, Update (with your choices), Maintenance and History, for every source: the repositories, the AUR, Flatpak and Snap. Settings come next.
 
 ## The screens
 
@@ -10,10 +10,11 @@ It has the Dashboard, In-System, Install, Update (with your choices) and History
 - **2 In-System**: what's on this computer.
 - **3 Install**: find and install something new.
 - **4 Update**: nog's update plan: untick what waits, promote what can't.
-- **5 History**: opens its menu: **Activity** (everything nog ran, in plain words) or **nog Logs** (nog's own logs).
-- **6 Help**: opens its menu: this manual, the list of keys, the license, About. Each shows as a page here, Help lit; Esc goes back. **F1** opens the manual at the page for where you are.
+- **5 Maintenance**: what each source has left behind; tick what goes, and nog cleans it up.
+- **6 History**: opens its menu: **Activity** (everything nog ran, in plain words) or **nog Logs** (nog's own logs).
+- **7 Help**: opens its menu: this manual, the list of keys, the license, About. Each shows as a page here, Help lit; Esc goes back. **F1** opens the manual at the page for where you are.
 
-Every name in the menu bar has a number (1 to 6, left to right) and an underlined letter: **Ctrl** + that letter goes there too, even while you're typing in a search box (Ctrl+U for Update, Ctrl+S for History). The letter is the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q. History and Help open their menus, and their name is lit while the menu is open; pick from it with the underlined letter or Enter, and press the number again to close it.
+Every name in the menu bar has a number (1 to 7, left to right) and an underlined letter: **Ctrl** + that letter goes there too, even while you're typing in a search box (Ctrl+U for Update, Ctrl+M for Maintenance, Ctrl+S for History). The letter is the first letter of its name, or the next free letter of the name when that one is taken; Help is always H and Quit Q. History and Help open their menus, and their name is lit while the menu is open; pick from it with the underlined letter or Enter, and press the number again to close it.
 
 ## Closing nogForge
 

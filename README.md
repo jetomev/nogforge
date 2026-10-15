@@ -1,6 +1,6 @@
 # nogForge
 
-> Packages, the KognogOS way: what's installed, searching and installing, and updates, in plain words, in a terminal. The decisions are **nog**'s; nogForge shows them.
+> Packages, the KognogOS way: what's installed, searching and installing, updates and the clean-up, for every source — the repositories, the AUR, Flatpak and Snap — in plain words, in a terminal. The decisions are **nog**'s; nogForge shows them.
 
 > 🖥 **Where it runs:** **Arch Linux and KognogOS** (it runs on top of nog) · **no desktop needed**: any desktop, or none · **works on a plain text console** (a tty).
 
@@ -8,7 +8,7 @@
 ![Platform: KognogOS / Arch](https://img.shields.io/badge/Platform-KognogOS%20%2F%20Arch-lightgrey.svg)
 ![Python: 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)
 ![Status: Stable](https://img.shields.io/badge/Status-Stable-brightgreen.svg)
-![Version: 1.4.0](https://img.shields.io/badge/Version-1.4.0-purple.svg)
+![Version: 1.5.0](https://img.shields.io/badge/Version-1.5.0-purple.svg)
 [![AUR](https://img.shields.io/aur/version/nogforge?color=1793d1&label=AUR)](https://aur.archlinux.org/packages/nogforge)
 
 ---
@@ -20,6 +20,14 @@
 nogForge brings what [Pamac](https://github.com/manjaro/pamac), Manjaro's software centre, does so well (with thanks: it's the inspiration) to the terminal, on top of nog: your programs as a table, a search with types, and updates you can read. **nog decides; nogForge shows it.** Tiers, holds and which packages must move together are never worked out twice.
 
 ---
+
+## What's in 1.5
+
+On **nog 2.0.0**, which answers for every source: **Flatpak apps and snaps are rows** like any package. In-System lists the ones installed (a base snap says **Locked**: it's the system under the snaps), with **✕ Uninstall**; Install finds them beside the repositories and the AUR, with **+ Install** — nog gets the exact name (`flatpak/<app-id>`, `snap/<name>`), and the review says who asks (flatpak shows what comes with it; snap never asks, so nog does). The Repositories window ticks Flatpak and Snap too. The Dashboard counts them from nog's list.
+
+**Maintenance** is the new fifth page (**5**, **Ctrl+M**): nog's report of what each source has left behind — old downloads, orphans, the AUR helper's build trees, Flatpak runtimes no app uses, old snap revisions — each with its size. Tick what goes (Space), **Clean Up the Ticked Ones (c)**, and nog takes exactly those (`nog clean --only …`), asking once in its window before pacman and flatpak ask with their own lists. **c** anywhere else opens the page; the Dashboard's Space box says how much could go. History and Help moved to **6** and **7**.
+
+Fixed: after a change, Install's search ran again and its hidden list took the keyboard — a Del on In-System could open an install review. Tests: 61 (was 56), no warnings.
 
 ## What's in 1.4
 
@@ -79,7 +87,7 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 **Everything it needs** to build, run and test, with why, is in [docs/PACKAGING.md](docs/PACKAGING.md), measured from the code (the Forge Suite's [dependency audit](https://github.com/jetomev/forge-suite/issues/91), 2026-10-11).
 
 - KognogOS or Arch Linux
-- **nog 1.7.0 or newer** (nogForge reads its `--json` answers and its steps, and hands it the ticked updates by name)
+- **nog 2.0.0 or newer** (nogForge reads its `--json` answers — the list, the search, the plan and the maintenance report, every source — and its steps, and hands it the ticked updates and the ticked clean-up categories by name)
 - Python 3.11+, `python-textual`, `python-rich`, [`python-forgekit`](https://github.com/jetomev/forge-suite/tree/main/forgekit) 0.10.0+ (with `python-pyte`)
 - `archlinux-appstream-data` for app names and badges (optional; without it every package gets the plain badge)
 - `flatpak`, `snapd` (optional): their pages show when they're installed
@@ -112,16 +120,16 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 
 | Key | Does |
 |---|---|
-| 1 – 6 | Dashboard, In-System, Install, Update, History (opens its menu), Help (opens its menu) |
-| Ctrl + underlined letter | the same: Ctrl+D, Ctrl+I, Ctrl+N, Ctrl+U, Ctrl+S (History), Ctrl+H (Help); works from a search box too |
+| 1 – 7 | Dashboard, In-System, Install, Update, Maintenance, History (opens its menu), Help (opens its menu) |
+| Ctrl + underlined letter | the same: Ctrl+D, Ctrl+I, Ctrl+N, Ctrl+U, Ctrl+M, Ctrl+S (History), Ctrl+H (Help); works from a search box too |
 | u | open Update · on Update: update the ticked ones |
 | t · n | on Update: tick all · untick all |
 | / | on Update: the Find box (on In-System and Install: Search) |
 | r | review packages (Install) |
-| k | check for updates |
-| c | clean up old downloads (asks first) |
+| k | check for updates · on Maintenance: look again |
+| c | open Maintenance · on Maintenance: clean up the ticked categories (nog and the tools ask first) |
 | p | Repositories (In-System, Install) |
-| Space | tick or untick an update |
+| Space | tick or untick an update · on Maintenance: a category |
 | Enter | the row's option: install, remove, promote · on nog Logs: open the run |
 | Del | uninstall the selected package (In-System) |
 | / | search |
@@ -134,11 +142,19 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 ## Roadmap (each version tested by Javier before the next)
 
 - [ ] **Settings** — nog's holds and sources, pacman's safe options, repositories (signatures required, key checked first), cleaning
-- [ ] **Flatpak and Snap installs**, with nog's install chain (nog C3)
+- [x] **Flatpak and Snap**, with nog's install chain (nog C3, 1.9.0) and nog 2.0.0's every-source answers: rows, installs, uninstalls, the Repositories window — 1.5.0
+- [x] **Maintenance**: nog 2.0.0's report of what each source has left behind, pick and clean — 1.5.0
 
 ---
 
 ## Changelog
+
+### v1.5.0 — October 15, 2026 · every source, and Maintenance (on nog 2.0.0)
+
+- **Flatpak apps and snaps are rows** (nog 2.0.0's `list --json` and `search --json`): In-System shows the installed ones with **✕ Uninstall** (a base snap says **Locked**, *the system under the snaps*); Install finds them beside the repositories and the AUR with **+ Install**. nog gets the exact name — its `install_as` (`flatpak/org.gnome.Calculator`, `snap/calculiva`) and `remove_as` (the app ID) — never a bare word that another source could answer. The review before a change says who asks: flatpak shows what comes with it; snap never asks, so nog does. The Repositories window (p) ticks Flatpak and Snap too; the Dashboard counts them from nog's rows (an older nog: the counters, as before).
+- **Maintenance**, the fifth page (**5**, **Ctrl+M**, or **c** from anywhere): nog's report (`nog clean --json`) of what each source has left behind — old downloads, orphans, the AUR helper's build trees, Flatpak runtimes no app uses, old snap revisions — a row per category with its size, the highlighted one explained underneath (what it holds, who removes it). Tick what goes; **Clean Up the Ticked Ones (c)** hands nog exactly those (`nog clean --only a,b`) in the run window, where nog asks once and pacman and flatpak ask with their own lists. **Look Again (k)** refreshes. The Dashboard's Space box says how much could go, and its Clean Up opens the page. History is **6** now, Help **7**; the bottom bar says **1-7 menu**.
+- **Fixed**: after a change, Install's search ran again and focused its list even when another page was shown; a Del on In-System could reach that hidden list and open an install review. The list takes the keyboard only while Install is the page shown.
+- History's Activity knows the new verbs (reinstall, lock, unlock, tier, info, status, history, keep). Needs nog 2.0.0. Tests: 61 (was 56), no warnings.
 
 ### v1.4.0 — October 8, 2026 · the menu's keys, the same in every Forge app ([#24](https://github.com/jetomev/nogforge/issues/24), [#25](https://github.com/jetomev/nogforge/issues/25), [#26](https://github.com/jetomev/nogforge/issues/26))
 
@@ -149,17 +165,11 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 - **Never closed while nog is working**: q, Ctrl+Q, Quit and Settings' request all wait until nog is done (before, Ctrl+Q during an update closed nogForge, and nog with it).
 - Needs forgekit 0.10.0. Tests: 56 (was 42), no warnings (was none).
 
-### v1.3.0 — October 7, 2026 · searches follow the typing; one-row filters ([#21](https://github.com/jetomev/nogforge/issues/21), [#22](https://github.com/jetomev/nogforge/issues/22))
-
-- **Every search filters as you type**, like Update's Find: In-System at once (it filters what is already here); Install after half a second's pause and from two characters on (it asks nog); Enter still searches at once; an emptied box clears the results. The Search button is gone.
-- **One-row filters:** the search boxes, labels, drop-downs and buttons on the filter rows are one row tall (they were three), on a terminal and on a text console alike. The filter area went from seven rows to four.
-- Tests: 42 (was 41); the position checks cover the drop-downs' height.
-
 *Earlier versions: [docs/CHANGELOG.md](docs/CHANGELOG.md).*
 
 ## How this project is built
 
-A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (56 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
+A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (61 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
 
 ## Authors
 

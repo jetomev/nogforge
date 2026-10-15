@@ -1,9 +1,9 @@
 .\" nogforge.1 — nogForge man page
 .\" GNU GPL v3 — see LICENSE
-.TH NOGFORGE 1 "October 2026" "nogForge v1.4.0" "User Commands"
+.TH NOGFORGE 1 "October 2026" "nogForge v1.5.0" "User Commands"
 .
 .SH NAME
-nogforge \- packages the KognogOS way: what is installed, installing, and updates, in a terminal
+nogforge \- packages the KognogOS way: what is installed, installing, updates and the clean-up, for every source, in a terminal
 .
 .SH SYNOPSIS
 .B nogforge
@@ -25,8 +25,11 @@ nog decides; nogForge shows it. Tiers, holds, the day a hold ends and which
 packages must move together come from nog
 .RB ( "nog list \-\-json" ,
 .BR "nog search \-\-json" ,
-.BR "nog update \-\-json" )
-and are never worked out a second time.
+.BR "nog update \-\-json" ,
+.BR "nog clean \-\-json" )
+and are never worked out a second time. Since 1.5.0, on nog 2.0.0, every
+source is there: the repositories, the AUR, Flatpak apps and snaps, as rows
+like any package, installed and removed by the exact name nog gives.
 .PP
 A change (install, remove, update, clean up) is reviewed first, then handed
 to nog, which runs in a window inside nogForge (1.1): its steps and a
@@ -78,22 +81,31 @@ ones are handed to nog by name
 so only they go in. Afterwards, What changed compares versions before and
 after, and after a new kernel offers a restart.
 .TP
-.B 5 \- History
+.B 5 \- Maintenance
+nog's report of what each source has left behind (1.5.0, nog 2.0.0): old
+downloads, orphans, the AUR helper's build trees, Flatpak runtimes no app
+uses, old snap revisions, each with its size. Tick what goes (Space); Clean
+Up the Ticked Ones (c) hands nog exactly those
+.RB ( "nog clean \-\-only a,b" ),
+which asks once in its window before pacman and flatpak ask with their own
+lists. Look Again (k) refreshes the report.
+.TP
+.B 6 \- History
 A menu of two screens: Activity (everything nog ran, in plain words) and
 nog Logs (nog's own logs; Enter opens a run whole, as it appeared on screen).
 .TP
-.B 6 \- Help
+.B 7 \- Help
 A menu: the manual, every key, the license, About. Each shows as a page in
 the main area; Esc goes back. A menu's number pressed again closes it.
 .
 .SH KEYS
 .TP
-.B 1 \- 6
+.B 1 \- 7
 Go to a menu entry, left to right; History and Help open their menus.
 .TP
 .BR Ctrl +\fIletter\fR
 The underlined letter of a menu entry: Ctrl+D, Ctrl+I, Ctrl+N, Ctrl+U,
-Ctrl+S (History), Ctrl+H (Help). Works from inside a search box too. Each
+Ctrl+M (Maintenance), Ctrl+S (History), Ctrl+H (Help). Works from inside a search box too. Each
 letter is the first letter of the name, or the next free one when that is
 taken; Help is always H, Quit Q.
 .TP
@@ -101,16 +113,17 @@ taken; Help is always H, Quit Q.
 Open Update; on Update, update the ticked ones.
 .TP
 .B k
-Check for updates.
+Check for updates; on Maintenance, look again.
 .TP
 .B c
-Clean up old downloads (asks first).
+Open Maintenance; on Maintenance, clean up the ticked categories (nog and
+the tools ask first).
 .TP
 .B Space
-Tick or untick an update.
+Tick or untick an update; on Maintenance, a category.
 .TP
 .B Enter
-The row's option: install, uninstall, promote; on nog Logs, open the run.
+The row's option: install, uninstall, promote (Flatpak apps and snaps too); on nog Logs, open the run.
 .TP
 .BR / ,\  p
 Search; the Repositories window.
@@ -127,9 +140,10 @@ One line per session, written when nogForge closes.
 nog's own logs, read by History.
 .
 .SH REQUIREMENTS
-nog 1.7.0 or newer, python-forgekit 0.10.0 or newer (with python-pyte),
-python-textual, python-rich. Optional: archlinux-appstream-data (app names
-and badges).
+nog 2.0.0 or newer (every source's rows and the maintenance report),
+python-forgekit 0.10.0 or newer (with python-pyte), python-textual,
+python-rich. Optional: archlinux-appstream-data (app names and badges);
+flatpak and snapd for their rows.
 .
 .SH SEE ALSO
 .BR nog (1),

@@ -30,7 +30,8 @@ from . import __version__, catalogue, nog, records
 from .nog import NogError, Package
 from .ui.packages import PackageList
 from .ui.screens import (
-    ActivityScreen, DashboardScreen, FilterBar, InstallScreen, InSystemScreen, NogLogsScreen, UpdateScreen,
+    ActivityScreen, DashboardScreen, FilterBar, InstallScreen, InSystemScreen, MaintenanceScreen, NogLogsScreen,
+    UpdateScreen,
 )
 
 MANUAL_DIR = os.path.join(os.path.dirname(__file__), "manual")
@@ -199,6 +200,7 @@ class NogForgeApp(ForgeApp):
         {"id": "insystem", "title": "In-System", "kind": "section"},
         {"id": "install", "title": "Install", "kind": "section"},
         {"id": "update", "title": "Update", "kind": "section"},
+        {"id": "maintain", "title": "Maintenance", "kind": "section"},
         {"id": "history", "title": "History", "kind": "menu", "items": [
             ("Activity", "a", "show-activity"), ("nog Logs", "l", "show-noglogs")]},
         {"id": "help", "title": "Help", "kind": "menu", "items": [
@@ -212,13 +214,15 @@ class NogForgeApp(ForgeApp):
     # follow Javier's rule (forgekit's assign_accels: the title's first letter, else its next free one;
     # Help H, Quit Q): D, I, N (Install: I is taken), U, S (History: H and I are taken)
     SHORTCUTS = [
-        ("1-6", "Dashboard, In-System, Install, Update, History (its menu), Help (its menu)"),
-        ("Ctrl+letter", "the underlined letter in the menu bar: D, I, N, U, S (History), H (Help)"),
+        ("1-7", "Dashboard, In-System, Install, Update, Maintenance, History (its menu), Help (its menu)"),
+        ("Ctrl+letter", "the underlined letter in the menu bar: D, I, N, U, M, S (History), H (Help)"),
         ("u", "open Update · on Update: update the ticked ones"),
         ("r", "review packages (Install)"),
         ("h", "open History (Activity)"),
+        ("c", "open Maintenance · on Maintenance: clean up the ticked categories"),
+        ("k", "check for updates · on Maintenance: look again"),
         ("Enter", "the row's option: install, remove, promote; on nog Logs: open the log"),
-        ("Space", "tick or untick an update"),
+        ("Space", "tick or untick an update · on Maintenance: a category"),
         ("Del", "uninstall the selected package (In-System)"),
         ("/", "search"),
         ("p", "repositories (In-System, Install)"),
@@ -252,6 +256,8 @@ class NogForgeApp(ForgeApp):
         self.cache = (0, 0)
         self.flatpaks: int | None = None
         self.snaps: int | None = None
+        self.maint: dict | None = None       # 1.5.0: nog 2.0.0's maintenance report (clean --json)
+        self.maint_error = ""
         self.changes: list[tuple[str, str, int]] = []      # (action, names, exit code), for the closing note
         self.keep: set[str] = set()          # what you unticked on Update
         self.promote: set[str] = set()       # what you promoted: ready now, with the ticked ones
@@ -275,6 +281,7 @@ class NogForgeApp(ForgeApp):
         yield InSystemScreen(id="sec-insystem")
         yield InstallScreen(id="sec-install")
         yield UpdateScreen(id="sec-update")
+        yield MaintenanceScreen(id="sec-maintain")
         yield ActivityScreen(id="sec-activity")
         yield NogLogsScreen(id="sec-noglogs")
 
@@ -283,6 +290,7 @@ class NogForgeApp(ForgeApp):
         self.set_title_status(f"{os.uname().nodename} · {self.nog_version()}")
         self.load_local()
         self.load_plan()
+        self.load_maint()
 
     def nog_version(self) -> str:
         b = nog.binary()
@@ -319,6 +327,32 @@ class NogForgeApp(ForgeApp):
     def _plan_done(self, plan, err: str) -> None:
         self.plan, self.plan_error = plan, err
         self.refresh_screens()
+
+    @work(thread=True, exclusive=True, group="nf-maint")
+    def load_maint(self) -> None:
+        """nog 2.0.0's maintenance report: what each source has left behind (flatpak and snap
+        are asked, so a few seconds), in the background. An older nog has none, and says so."""
+        try:
+            m, err = nog.maintenance(), ""
+        except NogError as e:
+            m, err = None, str(e)
+        self.call_from_thread(self._maint_done, m, err)
+
+    def _maint_done(self, maint, err: str) -> None:
+        self.maint, self.maint_error = maint, err
+        self.refresh_screens()
+
+    def clean_ticked(self) -> None:
+        """Maintenance's Clean Up: nog gets the ticked categories (`nog clean --only a,b`) and asks
+        once in its window; pacman and flatpak then ask with their own lists."""
+        try:
+            ids = self.query_one(MaintenanceScreen).ticked()
+        except NoMatches:
+            ids = []
+        if not ids:
+            self.notify("Tick what should go first: Space on a category.", title="Nothing ticked", timeout=6)
+            return
+        self.hand_off("clean", ["--only", ",".join(ids)])
 
     @work(thread=True, exclusive=True, group="nf-search")
     def run_search(self, query: str) -> None:
@@ -451,7 +485,7 @@ class NogForgeApp(ForgeApp):
         self.refresh_screens()
 
     def refresh_screens(self) -> None:
-        for cls in (DashboardScreen, InSystemScreen, UpdateScreen, ActivityScreen, NogLogsScreen):
+        for cls in (DashboardScreen, InSystemScreen, UpdateScreen, MaintenanceScreen, ActivityScreen, NogLogsScreen):
             try:
                 self.query_one(cls).refresh_view()
             except NoMatches:
@@ -462,8 +496,8 @@ class NogForgeApp(ForgeApp):
         self._switch_section(section)
 
     def on_section_shown(self, section_id: str) -> None:
-        focus = {"insystem": "#is-list", "install": "#in-find", "update": "#up-ready", "activity": "#ac-list",
-                 "noglogs": "#nl-list"}.get(section_id)
+        focus = {"insystem": "#is-list", "install": "#in-find", "update": "#up-ready", "maintain": "#mt-list",
+                 "activity": "#ac-list", "noglogs": "#nl-list"}.get(section_id)
         if focus:
             self.query_one(focus).focus()
 
@@ -480,9 +514,18 @@ class NogForgeApp(ForgeApp):
     # Javier, 3 Oct: one letter, one meaning: "c" said "check again" on Update and
     # cleaned up on the Dashboard. c is always Clean Up; k checks for updates.
     def action_clean(self) -> None:
-        self.hand_off("clean", [])
+        """c: open Maintenance; on Maintenance, clean up the ticked categories (1.5.0; before,
+        c handed nog a bare `clean`, which now asks which categories — a question for the page)."""
+        if self.query_one("#forge-work").current == "sec-maintain":
+            self.clean_ticked()
+        else:
+            self._switch_section("maintain")
 
     def action_check(self) -> None:
+        if self.query_one("#forge-work").current == "sec-maintain":
+            self.load_maint()                    # k on Maintenance: look again
+            self.refresh_screens()
+            return
         if self.query_one("#forge-work").current != "sec-update":
             self._switch_section("update")
         self.check_updates()
@@ -566,7 +609,7 @@ class NogForgeApp(ForgeApp):
         elif bid == "db-history":
             self._switch_section("activity")
         elif bid == "db-clean":
-            self.hand_off("clean", [])
+            self._switch_section("maintain")
         elif bid == "up-check":
             self.check_updates()
         elif bid == "up-run":
@@ -626,15 +669,23 @@ class NogForgeApp(ForgeApp):
         cmd, env = nog.change_command("remove" if removing else "install", [p.name])
         if removing:
             change = ChangeGroup("Uninstall", "", [(p.name, p.version, "uninstalled")])
-            steps = ["nog runs here, in a window inside nogForge, and pacman shows its own list: what goes "
-                     "with it (what only it needed), and asks before anything changes",
+            tool = ("flatpak shows what goes and asks first" if p.flatpak else
+                    "snap never asks, so nog asks first (snapd keeps its data for a while)" if p.snap else
+                    "pacman shows its own list: what goes with it (what only it needed), and asks before anything "
+                    "changes; nog first says what another app still uses, with a Keep")
+            steps = [f"nog runs here, in a window inside nogForge, and {tool}",
                      nog.describe_password(env), "Each step shows as it happens; nog's own screen opens when it asks"]
         else:
-            where = "built on this computer from the AUR: its helper shows the build recipe to review" if p.aur \
-                else f"from {p.source}"
+            if p.aur:
+                where = "built on this computer from the AUR: its helper shows the build recipe to review; pacman asks once more"
+            elif p.flatpak:
+                where = f"a Flatpak app ({p.install_as or 'flatpak/' + p.name}): flatpak shows what comes with it (the runtimes it needs) and asks first"
+            elif p.snap:
+                where = f"a snap ({p.install_as or 'snap/' + p.name}): snap never asks, so nog asks first"
+            else:
+                where = f"from {p.source}; pacman shows what comes with it and asks first"
             change = ChangeGroup("Install", "", [(p.name, "not installed", p.version)])
-            steps = [f"nog runs here, in a window inside nogForge: {where}; pacman shows what comes with it "
-                     f"and asks first", nog.describe_password(env),
+            steps = [f"nog runs here, in a window inside nogForge: {where}", nog.describe_password(env),
                      "Each step shows as it happens; nog's own screen opens when it asks"]
         choice = await self.push_screen_wait(ReviewDialog(
             "Review before " + ("uninstalling" if removing else "installing"), [change], steps=steps,
@@ -643,7 +694,10 @@ class NogForgeApp(ForgeApp):
             return
         # nog 1.7 (F-11): install from the source of the row picked, so the AUR's
         # neofetch is never swapped for a repository package providing "neofetch"
-        name = p.name if removing else (f"aur/{p.name}" if p.aur else f"{p.source}/{p.name}" if p.source else p.name)
+        if removing:
+            name = p.remove_as or p.name
+        else:
+            name = p.install_as or (f"aur/{p.name}" if p.aur else f"{p.source}/{p.name}" if p.source else p.name)
         self.hand_off("remove" if removing else "install", [name])
 
     def update_ticked(self) -> None:
@@ -677,10 +731,11 @@ class NogForgeApp(ForgeApp):
         targets = [n.split("/", 1)[-1] for n in names if not n.startswith("-")]
         if "--promote" in names:
             targets = [n.split("/", 1)[-1] for n in names[:names.index("--promote")] if not n.startswith("-")]
+        only = names[names.index("--only") + 1].split(",") if "--only" in names else []
         title = {"install": f"Installing {' '.join(targets)}", "remove": f"Removing {' '.join(targets)}",
                  "update": f"Updating {len(targets)} package{'s' if len(targets) != 1 else ''}"
                  + (f": {', '.join(targets[:5])}" + (" …" if len(targets) > 5 else "") if targets else ""),
-                 "clean": "Cleaning up old downloads"}.get(action, f"nog {action}")
+                 "clean": "Cleaning up" + (f": {', '.join(only)}" if only else "")}.get(action, f"nog {action}")
         done = {"install": "Installed.", "remove": "Removed.", "update": "Updated.",
                 "clean": "Cleaned up."}.get(action, "Done.")
         self.run_worker(self.run_in_app(title, cmd, env, callback=after, events_path=events, tool="nog",
@@ -702,6 +757,7 @@ class NogForgeApp(ForgeApp):
                         f"on its screen in the run window, and in History.", title="Not done", severity="warning",
                         timeout=12)
         self.load_local()
+        self.load_maint()                        # what each source has left behind changed too
         if action == "update":
             self.keep, self.promote, self.keep_plan = set(), set(), None
             self.show_what_changed(code, before, expected, kept)

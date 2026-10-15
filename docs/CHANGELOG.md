@@ -2,6 +2,12 @@
 
 *Newest first. The README carries the two most recent releases; older ones are here.*
 
+### v1.3.0 — October 7, 2026 · searches follow the typing; one-row filters ([#21](https://github.com/jetomev/nogforge/issues/21), [#22](https://github.com/jetomev/nogforge/issues/22))
+
+- **Every search filters as you type**, like Update's Find: In-System at once (it filters what is already here); Install after half a second's pause and from two characters on (it asks nog); Enter still searches at once; an emptied box clears the results. The Search button is gone.
+- **One-row filters:** the search boxes, labels, drop-downs and buttons on the filter rows are one row tall (they were three), on a terminal and on a text console alike. The filter area went from seven rows to four.
+- Tests: 42 (was 41); the position checks cover the drop-downs' height.
+
 ### v1.2.0 — October 7, 2026 · Javier's four ([#17](https://github.com/jetomev/nogforge/issues/17), [#18](https://github.com/jetomev/nogforge/issues/18), [#19](https://github.com/jetomev/nogforge/issues/19), [#20](https://github.com/jetomev/nogforge/issues/20))
 
 - **Update:** a **Find** box narrows the Ready and Held lists as you type (`/` goes there); every ready row has **⬆ Update**, which hands nog that one name alone; **Tick All (t)** and **Untick All (n)**; a tick far down the list keeps the scroll and the highlight (#17).

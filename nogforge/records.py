@@ -32,8 +32,11 @@ class Run:
         if not words:
             return "nog"
         verb = {"install": "Install", "remove": "Remove", "update": "Update", "clean": "Clean up",
-                "pin": "Change tier", "unlock": "Promote", "activate": "Turn on", "deactivate": "Turn off",
-                "search": "Search", "list": "List"}.get(words[0], words[0])
+                "pin": "Change tier", "unlock": "Unlock", "activate": "Turn on", "deactivate": "Turn off",
+                "search": "Search", "list": "List", "keep": "Keep", "reinstall": "Reinstall", "info": "Look at",
+                "tier": "Tier", "lock": "Lock", "status": "Status", "history": "History"}.get(words[0], words[0])
+        if words[0] == "unlock" and "--promote" in words:
+            verb = "Promote"
         rest = " ".join(Path(w).name if "/" in w else w for w in words[1:])
         return f"{verb} {rest}".strip()
 

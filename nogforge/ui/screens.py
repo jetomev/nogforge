@@ -1,5 +1,6 @@
-"""nogForge's screens: Dashboard, In-System, Install, Update, History ▸
-Activity and nog Logs (after Javier's first run, 3 Oct).
+"""nogForge's screens: Dashboard, In-System, Install, Update, Maintenance
+(1.5.0, on nog 2.0.0's report), History ▸ Activity and nog Logs (after
+Javier's first run, 3 Oct).
 
 Drawn from the approved design (docs/design/v0.1-screens.html) and his notes:
 In-System and Install share one filter bar — Search with its button, Type,
@@ -37,7 +38,7 @@ PACMAN_CONF = Path("/etc/pacman.conf")
 
 
 def label(src: str) -> str:
-    return "AUR" if src == "aur" else src
+    return {"aur": "AUR", "flatpak": "Flatpak", "snap": "Snap"}.get(src, src)
 
 
 def repositories(conf: Path = PACMAN_CONF) -> list[str]:
@@ -214,6 +215,13 @@ class FilterBar(Vertical):
 
     def choose_repositories(self) -> None:
         names = repositories(getattr(self.app, "pacman_conf", PACMAN_CONF))
+        # 1.5.0: Flatpak and Snap are sources too (nog 2.0.0 lists and searches them)
+        seen = {p.source for p in getattr(self.app, "packages", [])}
+        try:
+            seen |= {p.source for p in self.screen.query_one(InstallScreen).results}
+        except Exception:
+            pass
+        names += [src for src in ("flatpak", "snap") if src in seen]
         chosen = self.repos if self.repos is not None else set(names)
 
         def done(picked) -> None:
@@ -294,10 +302,13 @@ class DashboardScreen(VerticalScroll, can_focus=False):
                 t = Counter(p.tier for p in ps)
                 rows.append([label(src), str(len(ps)), str(t[1]), str(t[2]), str(t[3])])
                 tot.update({"n": len(ps), 1: t[1], 2: t[2], 3: t[3]})
-            for src, n in (("Flatpak", app.flatpaks), ("Snap", app.snaps)):
-                if n is not None:
-                    rows.append([src, str(n), "0", "0", str(n)])
-                    tot.update({"n": n, 3: n})
+            # 1.5.0: nog 2.0.0 lists Flatpak apps and snaps itself (rows above, by source);
+            # an older nog has no such rows, and the counters stand in
+            if not any(p.source in ("flatpak", "snap") for p in app.packages):
+                for src, n in (("Flatpak", app.flatpaks), ("Snap", app.snaps)):
+                    if n is not None:
+                        rows.append([src, str(n), "0", "0", str(n)])
+                        tot.update({"n": n, 3: n})
             self.query_one("#db-yours", Static).update(table(app, ["Source", "Yours", "Tier 1", "Tier 2", "Tier 3"],
                                                              rows, ["Total", str(tot["n"]), str(tot[1]), str(tot[2]),
                                                                     str(tot[3])]))
@@ -309,10 +320,25 @@ class DashboardScreen(VerticalScroll, can_focus=False):
         else:
             self.query_one("#db-recent", Static).update(f"[{m}]Nothing yet: nog's runs show here.[/]")
         size, files = app.cache
-        self.query_one("#db-space", Static).update(
-            f"[{m}]Package cache[/] [b]{records.size_words(size)}[/] [{m}]{glyph('dash')} {files:,} files[/]\n"
-            f"[{m}]Clean Up asks nog to let old downloads go, keeping what a held package may still need. "
-            f"It shows the list and asks first.[/]")
+        maint = getattr(app, "maint", None)
+        if maint:
+            cats = [c for c in maint.get("categories", []) if c.get("items")]
+            total = sum(c.get("bytes", 0) for c in cats)
+            parts = ", ".join(f"{SHORT.get(c['id'], c['id'])} {records.size_words(c['bytes'])}" for c in cats[:5])
+            self.query_one("#db-space", Static).update(
+                f"[{m}]Could go:[/] [b]{records.size_words(total)}[/] [{m}]{glyph('dash')} {parts or 'nothing'}[/]\n"
+                f"[{m}]Package cache {records.size_words(size)}, {files:,} files. Clean Up opens Maintenance: "
+                f"pick what goes; each tool asks first.[/]")
+        else:
+            self.query_one("#db-space", Static).update(
+                f"[{m}]Package cache[/] [b]{records.size_words(size)}[/] [{m}]{glyph('dash')} {files:,} files[/]\n"
+                f"[{m}]Clean Up opens Maintenance" + (f": {escape(app.maint_error)}" if getattr(app, "maint_error", "") else
+                f" (asking nog what each source has left behind{glyph('ellipsis')})") + "[/]")
+
+
+# 1.5.0: nog 2.0.0's maintenance categories, in a word or two for the Dashboard
+SHORT = {"cache": "old downloads", "orphans": "orphans", "aur": "build trees", "flatpak": "unused runtimes",
+         "snap": "old snap revisions"}
 
 
 def source_of(r: dict) -> str:
@@ -403,8 +429,12 @@ class InstallScreen(Vertical):
     def show_results(self, results, error: str = "") -> None:
         self.results = results
         self._fill(error)
-        if self._final and self.query_one(PackageList).rows:
-            self.query_one(PackageList).focus()          # after Enter: keys act again, Enter on a row; typing keeps the box
+        shown = self.app.query_one("#forge-work").current == "sec-install"
+        if self._final and shown and self.query_one(PackageList).rows:
+            # after Enter: keys act again, Enter on a row; typing keeps the box. Only while Install is the page
+            # shown: the search is run again after every change, and a hidden list must not take the keyboard
+            # (1.5.0: Del on In-System reached Install's list and opened an install review)
+            self.query_one(PackageList).focus()
 
     @on(FilterBar.Changed)
     def _filter(self, e) -> None:
@@ -557,6 +587,105 @@ class UpdateScreen(VerticalScroll, can_focus=False):
         self.app.toggle_keep(e.row.package.name)
 
 
+# ── Maintenance (1.5.0): nog 2.0.0's report of what each source leaves behind ──
+class MaintenanceScreen(Vertical):
+    FORGE_HINTS = [("Space", "tick / untick"), ("c", "clean up the ticked"), ("k", "look again"), ("F1", "help")]
+
+    def compose(self) -> ComposeResult:
+        with Horizontal(classes="forge-buttons nf-top"):
+            yield Button("Look Again (k)", id="mt-check")
+            yield Button("Clean Up the Ticked Ones (c)", id="mt-run", variant="primary")
+        yield Static("", id="mt-summary")
+        yield Static("[b]What each source has left behind[/]  [$forge-muted]tick what goes; each tool asks first[/]",
+                     classes="nf-section")
+        yield CheckList(id="mt-list")
+        yield Static("", id="mt-detail", classes="nf-count")
+
+    def on_mount(self) -> None:
+        self.refresh_view()
+
+    def refresh_view(self) -> None:
+        app, m = self.app, "$forge-muted"
+        lst = self.query_one("#mt-list", CheckList)
+        summary = self.query_one("#mt-summary", Static)
+        maint = app.maint
+        if app.maint_error:
+            summary.update(f"[$forge-warn]{glyph('warn')} {escape(app.maint_error)}[/]")
+            lst.clear_options()
+            self.query_one("#mt-run", Button).disabled = True
+            return
+        if maint is None:
+            summary.update(f"[{m}]Asking nog what each source has left behind{glyph('ellipsis')}[/]")
+            lst.clear_options()
+            self.query_one("#mt-run", Button).disabled = True
+            return
+        cats = maint.get("categories", [])
+        ticked = set(lst.selected)
+        lst.clear_options()
+        for i, c in enumerate(cats):
+            size = records.size_words(c["bytes"]) if c.get("items") else "nothing"
+            text = Text.assemble((c["what"], ""), ("  ·  ", ""), (size, "bold"))
+            lst.add_option((text, c["id"], c["id"] in ticked and bool(c.get("items"))))
+            if not c.get("items"):
+                lst.get_option_at_index(i).disabled = True
+        total = sum(c.get("bytes", 0) for c in cats if c.get("items"))
+        with_items = sum(1 for c in cats if c.get("items"))
+        cache = maint.get("cache", {})
+        summary.update(
+            f"[b]About {records.size_words(total)} could go[/] · {with_items} of {len(cats)} categories have something"
+            + (f" · pacman's cache holds {records.size_words(cache.get('bytes', 0))}, {cache.get('kept_files', 0):,} "
+               f"versions stay" if cache else "") +
+            f"\n[{m}]The clean-up runs here, inside nogForge: nog asks once for the ticked categories, then pacman and "
+            f"flatpak ask with their own lists; nogForge asks for your password itself.[/]")
+        self._detail()
+        self._count()
+
+    def ticked(self) -> list[str]:
+        return [str(v) for v in self.query_one("#mt-list", CheckList).selected]
+
+    def _count(self) -> None:
+        n = len(self.ticked())
+        b = self.query_one("#mt-run", Button)
+        b.label = f"Clean Up the Ticked Ones ({n}) (c)"
+        b.disabled = n == 0
+
+    def _detail(self) -> None:
+        lst = self.query_one("#mt-list", CheckList)
+        maint = self.app.maint or {}
+        i = lst.highlighted
+        if i is None or not maint:
+            self.query_one("#mt-detail", Static).update("")
+            return
+        try:
+            cid = lst.get_option_at_index(i).value
+        except Exception:
+            return
+        c = next((c for c in maint.get("categories", []) if c["id"] == cid), None)
+        if not c:
+            return
+        names = c.get("names") or []
+        shown = ", ".join(names[:10]) + (f", … {len(names) - 10} more" if len(names) > 10 else "")
+        self.query_one("#mt-detail", Static).update(
+            f"[$forge-muted]{escape(c.get('how', ''))}" + (f" · {escape(shown)}" if shown else "") + "[/]")
+
+    @on(CheckList.SelectionHighlighted)
+    def _moved(self, e) -> None:
+        self._detail()
+
+    @on(CheckList.SelectedChanged)
+    def _ticked(self, e) -> None:
+        self._count()
+
+    def on_button_pressed(self, e: Button.Pressed) -> None:
+        if e.button.id == "mt-check":
+            e.stop()
+            self.app.load_maint()
+            self.refresh_view()
+        elif e.button.id == "mt-run":
+            e.stop()
+            self.app.clean_ticked()
+
+
 # ── History ▸ Activity and nog Logs ─────────────────────────────────────────
 class RecordList(OptionList):
     """A full-width table like the package ones: cells, a line underneath, shaded rows."""
@@ -613,7 +742,7 @@ class RecordList(OptionList):
 
 
 class ActivityScreen(Vertical):
-    FORGE_HINTS = [("↑↓", "move"), ("5 l", "nog Logs"), ("F1", "help"), ("?", "all keys")]
+    FORGE_HINTS = [("↑↓", "move"), ("6 l", "nog Logs"), ("F1", "help"), ("?", "all keys")]
     COLUMNS = [("When", 16), ("What", 42), ("By", 12), ("Result", 22)]
 
     def compose(self) -> ComposeResult:
@@ -638,7 +767,7 @@ class ActivityScreen(Vertical):
 
 
 class NogLogsScreen(Vertical):
-    FORGE_HINTS = [("↑↓", "move"), ("Enter", "open the log"), ("5 a", "Activity"), ("F1", "help")]
+    FORGE_HINTS = [("↑↓", "move"), ("Enter", "open the log"), ("6 a", "Activity"), ("F1", "help")]
     COLUMNS = [("Date", 12), ("Time", 10), ("Command", 40), ("User", 12), ("Status", 8), ("Outcome", 12)]
 
     def compose(self) -> ComposeResult:
