@@ -27,7 +27,9 @@ On **nog 2.0.0**, which answers for every source: **Flatpak apps and snaps are r
 
 **Maintenance** is the new fifth page (**5**, **Ctrl+M**): nog's report of what each source has left behind — old downloads, orphans, the AUR helper's build trees, Flatpak runtimes no app uses, old snap revisions — each with its size. Tick what goes (Space), **Clean Up the Ticked Ones (c)**, and nog takes exactly those (`nog clean --only …`), asking once in its window before pacman and flatpak ask with their own lists. **c** anywhere else opens the page; the Dashboard's Space box says how much could go. History and Help moved to **6** and **7**.
 
-Fixed: after a change, Install's search ran again and its hidden list took the keyboard — a Del on In-System could open an install review. Tests: 61 (was 56), no warnings.
+Two small things from the backlog, the night of 16 October: the package now ships a **launcher entry** ([#16](https://github.com/jetomev/nogforge/issues/16)), so nogForge shows in every app menu and opens in your terminal; and nog's run window carries the **fold arrow** Javier asked for ([#23](https://github.com/jetomev/nogforge/issues/23)): a run is a progress bar with nog's screen folded behind a button that points down (▾) to open it and up (▴) to fold it again, F12 does the same, and nog's and pacman's yes/no questions come up as a bar with **Yes (y) / No (n)** with the table in view.
+
+Fixed: after a change, Install's search ran again and its hidden list took the keyboard — a Del on In-System could open an install review. And three things the scripted bench found in the KognogOS VM the same night ([F-17](https://github.com/jetomev/nogforge/issues/29), [F-18](https://github.com/jetomev/nogforge/issues/30), [F-19](https://github.com/jetomev/nogforge/issues/31)): the Repositories window lists Flatpak and Snap when nog checked them, even before anything from them is installed; two runs in the same minute show newest first in nog Logs; and a run's caption says its own log is there to open. Tests: 67 (was 56), no warnings.
 
 ## What's in 1.4
 
@@ -70,7 +72,10 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 ### Update: one kept back, one promoted
 ![Update](docs/screenshots/05-update.svg)
 
-### nog at work, inside nogForge (1.1)
+### Maintenance: what each source has left behind (1.5)
+![Maintenance](docs/screenshots/10-maintenance.svg)
+
+### nog at work, inside nogForge (1.1; the fold arrow since 1.5)
 ![nog's run inside nogForge](docs/screenshots/08-run.svg)
 ![The password, asked in nogForge](docs/screenshots/09-password.svg)
 
@@ -78,7 +83,7 @@ The design, drawn and approved before any code: [`docs/design/v0.1-screens.html`
 ![Activity](docs/screenshots/06-activity.svg)
 ![nog Logs](docs/screenshots/07-nog-logs.svg)
 
-*Made from the running app (`python docs/screenshots/generate.py`) with a stand-in nog and a sample package list.*
+*Made from the running app (`python docs/screenshots/generate.py`) with a stand-in nog and a sample package list (since 1.5.0 with Flatpak and snap rows and a sample maintenance report).*
 
 ---
 
@@ -108,7 +113,7 @@ git clone https://github.com/jetomev/nogforge.git
 python3 nogforge/main.py
 ```
 
-`man nogforge` has the reference; **F1** inside the app has the manual.
+`man nogforge` has the reference; **F1** inside the app has the manual. The package also puts **nogForge in your app menu** (1.5.0): it opens in your terminal.
 
 ### Inside hypeForge Settings
 
@@ -154,7 +159,10 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 - **Flatpak apps and snaps are rows** (nog 2.0.0's `list --json` and `search --json`): In-System shows the installed ones with **✕ Uninstall** (a base snap says **Locked**, *the system under the snaps*); Install finds them beside the repositories and the AUR with **+ Install**. nog gets the exact name — its `install_as` (`flatpak/org.gnome.Calculator`, `snap/calculiva`) and `remove_as` (the app ID) — never a bare word that another source could answer. The review before a change says who asks: flatpak shows what comes with it; snap never asks, so nog does. The Repositories window (p) ticks Flatpak and Snap too; the Dashboard counts them from nog's rows (an older nog: the counters, as before).
 - **Maintenance**, the fifth page (**5**, **Ctrl+M**, or **c** from anywhere): nog's report (`nog clean --json`) of what each source has left behind — old downloads, orphans, the AUR helper's build trees, Flatpak runtimes no app uses, old snap revisions — a row per category with its size, the highlighted one explained underneath (what it holds, who removes it). Tick what goes; **Clean Up the Ticked Ones (c)** hands nog exactly those (`nog clean --only a,b`) in the run window, where nog asks once and pacman and flatpak ask with their own lists. **Look Again (k)** refreshes. The Dashboard's Space box says how much could go, and its Clean Up opens the page. History is **6** now, Help **7**; the bottom bar says **1-7 menu**.
 - **Fixed**: after a change, Install's search ran again and focused its list even when another page was shown; a Del on In-System could reach that hidden list and open an install review. The list takes the keyboard only while Install is the page shown.
-- History's Activity knows the new verbs (reinstall, lock, unlock, tier, info, status, history, keep). Needs nog 2.0.0. Tests: 61 (was 56), no warnings.
+- **A launcher entry** ([#16](https://github.com/jetomev/nogforge/issues/16)): the package installs `/usr/share/applications/nogforge.desktop` (`Terminal=true`, checked with `desktop-file-validate` in the build), so nogForge shows in every app menu and launcher. hypeForge's own copy, which opens it in a floating window, replaces it there by name, so it never shows twice.
+- **The fold arrow** ([#23](https://github.com/jetomev/nogforge/issues/23)): the run window's button says which way the fold goes — **▾ nog's Screen (F12)** while a run is a progress bar with the screen folded, **▴ Fold nog's Screen (F12)** while it's open — on a text console `v` and `^`. The window itself is forgekit's, as since 1.1: the steps, the bar, the screen opening on a question or a failure, **Yes (y) / No (n)** for pacman's and nog's questions.
+- **From the scripted bench in the KognogOS VM** (the night of 16 → 17 October, `scripts/bench-150.py`): [F-17](https://github.com/jetomev/nogforge/issues/29) the Repositories window listed Flatpak only once something from it was installed — now a source nog's plan checked is listed, rows or no rows; [F-18](https://github.com/jetomev/nogforge/issues/30) two runs in the same minute showed oldest first in nog Logs — the line nog wrote last is the newest; [F-19](https://github.com/jetomev/nogforge/issues/31) every run's caption said *no other log for this run* while Enter opened its own log — the caption now says what is there.
+- History's Activity knows the new verbs (reinstall, lock, unlock, tier, info, status, history, keep). Needs nog 2.0.0. Tests: 67 (was 56), no warnings.
 
 ### v1.4.0 — October 8, 2026 · the menu's keys, the same in every Forge app ([#24](https://github.com/jetomev/nogforge/issues/24), [#25](https://github.com/jetomev/nogforge/issues/25), [#26](https://github.com/jetomev/nogforge/issues/26))
 
@@ -169,7 +177,7 @@ hypeForge Settings shows nogForge as one of its pages. It starts nogForge with `
 
 ## How this project is built
 
-A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (61 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
+A human and AI collaboration: the screens were drawn and approved before any code, every change is tested (67 tests, a stand-in nog, so no test touches your packages), and the `testing/` folder holds the test matrices, published on purpose.
 
 ## Authors
 

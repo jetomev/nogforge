@@ -34,7 +34,8 @@ like any package, installed and removed by the exact name nog gives.
 A change (install, remove, update, clean up) is reviewed first, then handed
 to nog, which runs in a window inside nogForge (1.1): its steps and a
 progress bar; nog's own screen opens when nog or pacman asks something,
-when something fails, or on F12. pacman shows exactly what comes with a
+when something fails, or on F12 (the window's button carries the arrow:
+down to open the screen, up to fold it). pacman shows exactly what comes with a
 change and asks before anything changes. The password is asked in
 nogForge's own box
 .RB ( "sudo \-A" ,
@@ -138,6 +139,9 @@ One line per session, written when nogForge closes.
 .TP
 .I ~/.local/share/nog/logs/
 nog's own logs, read by History.
+.TP
+.I /usr/share/applications/nogforge.desktop
+The launcher entry (1.5.0): nogForge in the app menu, opened in a terminal.
 .
 .SH REQUIREMENTS
 nog 2.0.0 or newer (every source's rows and the maintenance report),

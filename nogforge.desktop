@@ -1,0 +1,16 @@
+[Desktop Entry]
+# nogForge's own launcher entry (1.5.0, #16): the package installs it as
+# /usr/share/applications/nogforge.desktop, so the app shows in every app menu
+# and launcher. Terminal=true: the desktop opens it in its terminal. hypeForge
+# ships its own copy for its floating window; a user copy of the same name
+# replaces this one, so nothing shows twice.
+Type=Application
+Name=nogForge
+GenericName=Packages
+Comment=Install, update, remove and clean up apps through nog, from every source
+TryExec=nogforge
+Exec=nogforge
+Icon=system-software-install
+Terminal=true
+Categories=Settings;PackageManager;
+Keywords=packages;install;update;uninstall;clean;nog;pacman;AUR;Flatpak;Snap;

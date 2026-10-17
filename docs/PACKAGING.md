@@ -24,6 +24,16 @@ aren't listed.*
 | flatpak | the Flatpak pages (only when it's installed) | (program flatpak) |
 | snapd | the Snap pages (only when it's installed) | (program snap) |
 
+## At build time only (`checkdepends`)
+
+| Package | What uses it | Module / program |
+|---|---|---|
+| desktop-file-utils | `check()` validates the launcher entry `nogforge.desktop` (1.5.0, #16) | (program desktop-file-validate) |
+
+## Files the recipe installs
+
+`nogforge/` and `main.py` under `/usr/lib/nogforge/`, the `nogforge` launcher in `/usr/bin`, the man page, the license, and since 1.5.0 the launcher entry `nogforge.desktop` as `/usr/share/applications/nogforge.desktop`.
+
 ## The AUR recipe
 
-AUR 1.4.0-1 lacked the optional **flatpak** and **snapd**; 1.4.0-2 added them. 1.5.0 raises `nog` to `>= 2.0.0` (nog 2.0.0 must be on the AUR first: the dependency goes first).
+AUR 1.4.0-1 lacked the optional **flatpak** and **snapd**; 1.4.0-2 added them. 1.5.0 raises `nog` to `>= 2.0.0` (nog 2.0.0 is on the AUR since 2026-10-16: the dependency went first), installs the launcher entry and validates it in `check()` (`checkdepends=('desktop-file-utils')`).

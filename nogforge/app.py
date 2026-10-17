@@ -29,6 +29,7 @@ from forgekit import (
 from . import __version__, catalogue, nog, records
 from .nog import NogError, Package
 from .ui.packages import PackageList
+from .ui.run import NogRunWindow
 from .ui.screens import (
     ActivityScreen, DashboardScreen, FilterBar, InstallScreen, InSystemScreen, MaintenanceScreen, NogLogsScreen,
     UpdateScreen,
@@ -707,6 +708,14 @@ class NogForgeApp(ForgeApp):
 
     # tests set this to run nog without a window: (cmd, env) -> status
     run_in_terminal = None
+
+    async def run_in_app(self, title: str, cmd, env: dict | None = None, *, callback=None, **window) -> None:
+        """forgekit's run window with nogForge's fold arrow on its toggle button (1.5.0, #23):
+        the same window, the password asked in the app, ``callback(status)`` when it closes."""
+        bridge = await self.password_bridge()
+        e = dict(env if env is not None else os.environ)
+        e.update(bridge.env())
+        self.push_screen(NogRunWindow(title, cmd, e, **window), callback=callback)
 
     def hand_off(self, action: str, names: list[str]) -> None:
         """nog runs the change inside nogForge (v1.1: Javier, 4 Oct, "it stays

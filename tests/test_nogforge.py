@@ -1469,3 +1469,139 @@ class EverySource(StandIn, unittest.IsolatedAsyncioTestCase):
             self.assertTrue(await self.until(pilot, lambda: bool(app.ran)))
             self.assertEqual(app.ran[0][:2], ["clean", "--only"])
             self.assertEqual(set(app.ran[0][2].split(",")), set(ticked), "exactly the ticked categories, nothing else")
+
+
+class DesktopEntry(unittest.TestCase):
+    """#16 (1.5.0): the package ships nogforge.desktop, so the app shows in every app menu and launcher."""
+
+    def test_the_entry_is_there_and_valid(self):
+        import shutil
+        import subprocess
+        p = ROOT / "nogforge.desktop"
+        self.assertTrue(p.is_file(), "nogforge.desktop at the repository root (the recipe installs it)")
+        text = p.read_text()
+        for line in ("[Desktop Entry]", "Type=Application", "Name=nogForge", "Exec=nogforge", "TryExec=nogforge",
+                     "Terminal=true", "Icon=system-software-install"):
+            self.assertIn(line, text, f"{line} in the entry")
+        self.assertRegex(text, r"(?m)^Categories=Settings;PackageManager;$", "one main category: shown once in a menu")
+        validate = shutil.which("desktop-file-validate")
+        if not validate:
+            self.skipTest("desktop-file-validate isn't installed here")
+        r = subprocess.run([validate, str(p)], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(r.stdout.strip(), "", "no hints either: " + r.stdout)
+
+
+class FoldArrow(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
+    """#23 (1.5.0): a run is a progress bar with nog's screen folded behind an arrow button; the arrow
+    says which way the fold goes (▾ open it, ▴ fold it) and F12 or the button flips it."""
+
+    async def test_the_arrow_folds_and_opens_nogs_screen(self):
+        import sys
+        from forgekit.terminal import TerminalPane
+        from nogforge.ui.run import NogRunWindow, fold_label
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            events = self.dir / "events"
+            events.write_text("")
+            # with a steps file the window starts folded: the bar, not the screen
+            win = NogRunWindow("Installing hello", [sys.executable, "-c", "import time; time.sleep(30)"],
+                               dict(os.environ), events_path=str(events), tool="nog")
+            app.push_screen(win)
+            await pilot.pause(0.5)
+            pane = win.query_one(TerminalPane)
+            toggle = win.query_one("#run-toggle")
+            self.assertFalse(pane.display, "folded at the start")
+            self.assertEqual(str(toggle.label), fold_label(False, "nog"))
+            self.assertTrue(str(toggle.label).startswith(("▾", "v")), "the arrow points down: open it")
+            await pilot.press("f12")
+            await pilot.pause(0.3)
+            self.assertTrue(pane.display, "F12 opens nog's screen")
+            self.assertEqual(str(toggle.label), fold_label(True, "nog"))
+            self.assertTrue(str(toggle.label).startswith(("▴", "^")), "the arrow points up: fold it")
+            self.assertIn("Fold", str(toggle.label))
+            await pilot.click("#run-toggle")
+            await pilot.pause(0.3)
+            self.assertFalse(pane.display, "the button folds it again")
+            self.assertTrue(str(toggle.label).startswith(("▾", "v")))
+            proc = pane.proc
+            win.dismiss(None)
+            await pilot.pause(0.3)
+            proc.wait(timeout=20)
+            # without a steps file (an older nog) the screen is open from the start, and says so
+            win2 = NogRunWindow("Installing hello", [sys.executable, "-c", "import time; time.sleep(30)"],
+                                dict(os.environ), tool="nog")
+            app.push_screen(win2)
+            await pilot.pause(0.5)
+            self.assertTrue(win2.query_one(TerminalPane).display)
+            self.assertTrue(str(win2.query_one("#run-toggle").label).startswith(("▴", "^")))
+            proc2 = win2.query_one(TerminalPane).proc
+            win2.dismiss(None)
+            await pilot.pause(0.3)
+            proc2.wait(timeout=20)
+
+    async def test_a_change_opens_nogforges_own_window(self):
+        """hand_off goes through run_in_app → NogRunWindow (so before_quit's RunWindow check still holds)."""
+        import sys
+        from unittest import mock
+        from forgekit import RunWindow
+        from nogforge.ui.run import NogRunWindow
+        app = self.app()
+        app.run_in_terminal = None                       # the real path: a window
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            with mock.patch("nogforge.nog.change_command",
+                                     return_value=([sys.executable, "-c", "import time; time.sleep(30)"],
+                                                   dict(os.environ))):
+                app.hand_off("install", ["hello"])
+                self.assertTrue(await self.until(pilot, lambda: isinstance(app.screen, NogRunWindow)))
+            self.assertIsInstance(app.screen, RunWindow)
+            self.assertFalse(app.before_quit(), "never closed while nog works")
+            from forgekit.terminal import TerminalPane
+            proc = app.screen.query_one(TerminalPane).proc
+            app.screen.dismiss(None)
+            await pilot.pause(0.3)
+            proc.wait(timeout=20)
+
+
+class OvernightBenchFindings(AppMaker, StandIn, unittest.IsolatedAsyncioTestCase):
+    """F-17, F-18, F-19 from the scripted bench in the KognogOS VM (2026-10-17)."""
+
+    def test_f18_two_runs_in_one_minute_show_the_later_first(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            (d / "20261017 nog-runs.csv").write_text(
+                "date,time,user,command,status,outcome\n"
+                "10/17/2026,12:00 AM,j,remove cliamp,0,done\n"
+                "10/17/2026,12:00 AM,j,clean --only cache,0,done\n")
+            self.assertEqual([r.command for r in records.runs(d)], ["clean --only cache", "remove cliamp"],
+                             "the line nog wrote last is the newest, minutes-only stamps notwithstanding")
+
+    async def test_f17_a_source_nog_checked_is_listed_without_rows(self):
+        # the stand-in's list has no Flatpak row; its plan says flatpak checked, snap not installed
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            self.assertTrue(await self.until(pilot, lambda: app.plan is not None))
+            await pilot.press("2")
+            await pilot.pause(0.3)
+            app.query_one("#is-list").focus()
+            await pilot.press("p")
+            self.assertTrue(await self.until(pilot, lambda: type(app.screen).__name__ == "RepositoriesDialog"))
+            names = list(app.screen.names)
+            self.assertIn("flatpak", names, "flatpak is installed here (nog checked it): listed, rows or no rows")
+            self.assertNotIn("snap", names, "snap isn't installed here, nothing from it: not listed")
+            await pilot.press("escape")
+
+    async def test_f19_the_caption_names_the_runs_own_log(self):
+        (self.logs / "20261003-000350 install bitlaforge.log").write_text("the run, as it was on screen\n")
+        app = self.app()
+        async with app.run_test(size=(100, 32)) as pilot:
+            await pilot.pause(0.5)
+            await pilot.press("6", "l")
+            self.assertTrue(await self.until(pilot, lambda: app.query_one("#forge-work").current == "sec-noglogs"))
+            await pilot.pause(0.3)
+            rows = {cells[2]: under for cells, under in app.query_one("#nl-list").rows}
+            self.assertIn("its own log", rows["install bitlaforge"], rows["install bitlaforge"])
+            self.assertIn("Enter opens it", rows["install bitlaforge"])
+            self.assertTrue(rows["install grubforge"].startswith("no other log for this run"), rows["install grubforge"])
