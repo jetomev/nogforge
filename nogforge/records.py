@@ -47,7 +47,7 @@ class Run:
 
 def runs(folder: Path = LOGS, limit: int = 200) -> list[Run]:
     """Newest first. Lines nog couldn't have written are skipped, not guessed at."""
-    out: list[Run] = []
+    out: list[tuple[Run, int]] = []
     for f in sorted(folder.glob("* nog-runs.csv")):
         try:
             with f.open(newline="") as fh:
@@ -56,12 +56,14 @@ def runs(folder: Path = LOGS, limit: int = 200) -> list[Run]:
                         when = datetime.strptime(f"{r['date']} {r['time']}", "%m/%d/%Y %I:%M %p")
                     except (KeyError, ValueError, TypeError):
                         continue
-                    out.append(Run(when, r.get("command") or "", r.get("status") or "", r.get("outcome") or "",
-                                   r.get("user") or ""))
+                    out.append((Run(when, r.get("command") or "", r.get("status") or "", r.get("outcome") or "",
+                                    r.get("user") or ""), len(out)))
         except OSError:
             continue
-    out.sort(key=lambda r: r.when, reverse=True)
-    return out[:limit]
+    # F-18 (the VM bench, 2026-10-17): the line keeps minutes only, so two runs in one minute tied and
+    # the older came first; nog appends in order, so the later line wins the tie
+    out.sort(key=lambda t: (t[0].when, t[1]), reverse=True)
+    return [r for r, _ in out[:limit]]
 
 
 def cache_size(folder: Path = CACHE) -> tuple[int, int]:
@@ -107,12 +109,12 @@ class Detail:
         return t
 
 
-def full_log_for(run: Run, folder: Path = LOGS) -> Path | None:
+def full_log_for(run: Run, folder: Path = LOGS, known: list[Run] | None = None) -> Path | None:
     """The run's whole output as nog 1.6 keeps it, ``<YYYYMMDD-HHMMSS> <command>.log``
     (Javier, 3 Oct: "read the full run"). The file is named when the run STARTS
     and the runs line written when it ENDS, so: the newest log of that command
     that started after the previous run ended and before this one did."""
-    earlier = [r.when for r in runs(folder, limit=10_000) if r.when < run.when]
+    earlier = [r.when for r in (known if known is not None else runs(folder, limit=10_000)) if r.when < run.when]
     since = max(earlier) if earlier else None
     first = (run.command.split() or [""])[0]
     best = None
@@ -150,13 +152,14 @@ def read_full_log(path: Path) -> str:
     return "\n".join(out)
 
 
-def details_for(run: Run, folder: Path = LOGS) -> list[Detail]:
+def details_for(run: Run, folder: Path = LOGS, known: list[Run] | None = None) -> list[Detail]:
     """nog's other logs for one run. nog writes the run's line when it ENDS
     (an update at 13:00) and its package lines as they happen (12:43), so a
     run's details are that day's lines after the previous run's end and up to
     this one's."""
     day = run.when.strftime("%Y%m%d")
-    earlier = [r.when for r in runs(folder, limit=10_000) if r.when.date() == run.when.date() and r.when < run.when]
+    earlier = [r.when for r in (known if known is not None else runs(folder, limit=10_000))
+               if r.when.date() == run.when.date() and r.when < run.when]
     since = max(earlier) if earlier else None
     out = []
     for f in sorted(folder.glob(f"{day} nog-*.csv")):

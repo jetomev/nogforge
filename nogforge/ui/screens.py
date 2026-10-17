@@ -215,12 +215,17 @@ class FilterBar(Vertical):
 
     def choose_repositories(self) -> None:
         names = repositories(getattr(self.app, "pacman_conf", PACMAN_CONF))
-        # 1.5.0: Flatpak and Snap are sources too (nog 2.0.0 lists and searches them)
+        # 1.5.0: Flatpak and Snap are sources too (nog 2.0.0 lists and searches them). F-17 (the VM
+        # bench, 2026-10-17): a computer with flatpak installed but no app from it yet showed no
+        # Flatpak entry, so Install's Flatpak results couldn't be filtered. nog's plan says which
+        # sources it checked; a source nog checked is listed, rows or no rows.
         seen = {p.source for p in getattr(self.app, "packages", [])}
         try:
             seen |= {p.source for p in self.screen.query_one(InstallScreen).results}
         except Exception:
             pass
+        checked = ((getattr(self.app, "plan", None) or {}).get("sources") or {})
+        seen |= {src for src in ("flatpak", "snap") if checked.get(src) == "checked"}
         names += [src for src in ("flatpak", "snap") if src in seen]
         chosen = self.repos if self.repos is not None else set(names)
 
@@ -782,10 +787,17 @@ class NogLogsScreen(Vertical):
 
     def refresh_view(self) -> None:
         rows = []
+        known = records.runs(self.app.logs, limit=10_000)        # read once, not once per row
         for r in self.app.runs:
-            files = records.details_for(r, self.app.logs)
-            under = (f"{len(files)} more log{'s' if len(files) != 1 else ''} for this run: " +
-                     ", ".join(f.kind for f in files)) if files else "no other log for this run"
+            files = records.details_for(r, self.app.logs, known)
+            parts = []
+            # F-19 (2026-10-17): every row said "no other log for this run" while Enter opened the run's own
+            # log; say what is there
+            if records.full_log_for(r, self.app.logs, known):
+                parts.append("its own log, as it was on screen: Enter opens it")
+            if files:
+                parts.append(f"{len(files)} more log{'s' if len(files) != 1 else ''}: " + ", ".join(f.kind for f in files))
+            under = " · ".join(parts) if parts else "no other log for this run: the line above is all nog kept"
             rows.append(([r.when.strftime("%m/%d/%Y"), r.when.strftime("%I:%M %p"), r.command, r.user or "—",
                           r.status or "—", r.outcome or "—"], under))
         self.query_one(RecordList).show(rows)
