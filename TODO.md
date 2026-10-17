@@ -2,7 +2,22 @@
 
 *The live work list and the handoff between sessions. Newest work first. Updated after every step.*
 
-**Status (15 Oct 2026): 1.5.0 built the night of the 14th, on nog 2.0.0 (also built that night), waits on Javier's run of both; then GitHub, then the AUR (nog 2.0.0 first, then nogforge with `nog>=2.0.0`). 1.4.0 released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!").
+**Status (17 Oct 2026, 00:30): 1.5.0 benched overnight by Claude alone** (Javier, 16 Oct 23:30: "work without needing me, everything local, use the VM as needed"): this desktop read-only 11/11, the KognogOS VM with real changes (two runs; results in `testing/bench-150/`). #16 and #23 done, #27 checked for real, #28 ships; three findings F-17 #29 F-18 #30 F-19 #31 fixed the same night. 67 tests. **Nothing committed yet: the signing key was locked** → the morning starts with `scripts/commit-overnight.sh` (five commits), Javier's review, then `scripts/release-150.sh` (tag, GitHub Release, AUR recipe, local build), his install, and only then the AUR push. nog 2.0.0 is on the AUR since 16 Oct. 1.4.0 released 2026-10-08.
+
+## 2026-10-16 → 17 night · the overnight bench of 1.5.0, all issues resolved
+- [x] **Bookkeeping first** (the brief's rot): mindForge queue lines for nog (2.0.0 released), nogforge, homelab, portal; MEMORY.md lines; homelab TODO's two overdue server clean-ups marked
+- [x] **#16 launcher entry**: `nogforge.desktop` (Terminal=true, Categories=Settings;PackageManager; — one main category, validate shows no hints), installed by the recipe, validated in `check()` and in the test `DesktopEntry`; checked in the VM after `nog install` (MIME-cache hook ran)
+- [x] **#23 the fold arrow**: `ui/run.py` `NogRunWindow` relabels forgekit's toggle button ▾ / ▴ (`v` / `^` on a console), `run_in_app` overridden to push it; `btn.refresh(layout=True)` or the longer label is cut; tests `FoldArrow` (2). Shape 1's AUR-menu pop-ups stay typed in nog's screen (needs nog events first; noted on the issue)
+- [x] **#27 checked for real** in the VM: Uninstall cliamp → nog's `Keep yt-dlp? [Y/n]` came up as the Yes/No bar, Yes kept it (mpv uses it), pacman's question after, cliamp gone. The in-review preview needs `nog remove --json` (not open; Javier's call). Closes at the release with that note
+- [x] **#28** ships with 1.5.0 (comment posted)
+- [x] **The bench, scripted**: `scripts/bench-150.py` walks §2 headless on the real app + real nog, SVG per step, results table, per-step watchdog, its own log, `kill -USR1` dumps stacks. Desktop read-only: 14 steps, 11 ran, all PASS. VM run 1 (rc2): 6 PASS, 8 FAIL — 3 real findings + the driver leaving a window open after a failed step + a hang in the driver (Textual pilot stuck; SIGINT woke it) → watchdog + `settle()`. `scripts/vm-prep-150.sh` resets the VM (snapshot `before-nogforge-150`) and installs nog 2.0.0 + forgekit 0.10.0 + the rc, with garbage for Maintenance
+- [x] **F-17 #29** Repositories window listed Flatpak only once a Flatpak row existed → a source nog's plan checked is listed. **F-18 #30** two runs in one minute oldest first in nog Logs → the later line wins. **F-19 #31** every row said "no other log" while Enter opened its own log → the caption says what is there (runs read once). Tests 64 → **67**
+- [x] `make-rc-package.sh --worktree` (the commits were waiting for the signing key); rc2, rc3 built with the tests in `check()`
+- [x] Screenshots regenerated: the stand-in speaks nog 2.0.0 (Flatpak + snap rows, a maintenance report), new `10-maintenance.svg`, `08-run.svg` with the arrow, In-System scrolled to the new rows; README Screenshots gained Maintenance
+- [x] AUR recipe at 1.5.0 locally (`~/Programs/aur-nogforge/PKGBUILD`: nog>=2.0.0, pkgdesc with where-it-runs, the desktop entry, checkdepends; sha256 + .SRCINFO at the release)
+- [x] **VM run 2 on rc3** (00:12–00:16): 13/14 first time; 2.7's FAIL was the driver reading a wrapped sentence → `--only 2.7` rerun PASS (the Flatpak uninstalled through the window). **Every §2 step has passed in the VM; the read-only ones here too.** Results `testing/bench-150/{desktop,vm,vm-2.7,vm-run1}/`, `testing/20261017 - Test Results for nogForge v1-5-0.md`
+- [ ] **Morning (Javier):** review this list + `testing/20261017 - Test Results for nogForge v1-5-0.md`; unlock GPG → `scripts/commit-overnight.sh`; then `scripts/release-150.sh` (pre-flight, signed tag, push, GitHub Release with signed assets, AUR recipe updpkgsums + .SRCINFO, local makepkg) → **he installs the built package and looks** → only then the AUR push; close #16 #23 #27 #28 #29 #30 #31 with the explanations; kognogos.org nogForge card (server backup first); Vault; memory
+- [ ] Observation for nog (not an issue yet): `nog clean` in the VM printed "Leftover download folders 5 — size not readable" as the user (root-owned download folders); true, but the row could say why
 
 ## 2026-10-15 · 1.5.0 — every source, and Maintenance (nog's C6 half of #7, on nog 2.0.0)
 - [x] **Flatpak apps and snaps as rows**: `Package.install_as` / `remove_as` / `where` from nog 2.0.0's `list --json` and `search --json`; In-System shows them (a base snap Locked: "the system under the snaps"), Install finds them; the review says who asks (flatpak / nog for a snap); `nog install flatpak/<id>`, `nog remove <app-id>`; the Repositories window ticks Flatpak and Snap; the Dashboard counts them from nog's rows (an older nog: the counters)
@@ -11,24 +26,24 @@
 - [x] History's verbs: reinstall, lock, unlock (promote with --promote), tier, info, status, history, keep
 - [x] Tests 56 → **61**, 0 warnings: the rows carry nog's names; the Dashboard counts from the list; a Flatpak installed by its exact name and removed by its ID, a base snap locked; Maintenance cleans up only the ticked categories; the renumbered menu (5/6/7) everywhere; `c` opens Maintenance, runs nothing unticked
 - [x] Docs: README (What's in 1.5, keys 1–7, requirements nog 2.0.0, roadmap, changelog; 1.3.0 moved to docs/), man page, CLAUDE.md, manual (01, 02, 03, 04, new 06-maintain, 08), PACKAGING (nog >= 2.0.0), version 1.5.0
-- [ ] **Javier's run** — `testing/20261015 - Test Matrix for nogForge v1-5-0.md`, on nog 2.0.0rc1 (nog's bench first)
-- [ ] After his pass and nog 2.0.0 on the AUR: tag, GitHub Release, AUR 1.5.0-1 with `nog>=2.0.0` (after his local install); screenshots regenerated (`docs/screenshots/generate.py` — not redone tonight: the Maintenance page needs a real capture); kognogos.org card; Vault; memory
+- [x] ~~Javier's run~~ → Claude's scripted bench overnight (16 → 17 Oct, above); Javier reviews the results in the morning
+- [x] Screenshots regenerated (16 → 17 Oct night); the release steps moved to the morning list above
 - [ ] Not in 1.5.0: Flatpak/snap *updates* already flow through Update (nog's plan rows); a Maintenance category's full name list (10 shown); Settings (next)
 
 
 
 
-- [ ] **#27 (2026-10-08, Javier):** Uninstall shows what goes along and starts anything another app still uses on **Keep** — after nog #49 (warning + `nog keep`)
+- [x] **#27 (2026-10-08, Javier):** checked for real 17 Oct (above): nog asks its Keep inside nogForge's window, default yes; the in-review preview waits on a `nog remove --json` nobody has asked for
 ## 2026-10-12 · CLAUDE.md keeps only this project's own rules
 - [x] **One rule, one level** (Javier, 2026-10-12): the 'never the persona names here' line and the repeated 'plain words' rule removed. Commit pushed the same night.
 
 ## 2026-10-11 · What it needs, measured
 - [x] **What it needs, measured** (2026-10-11, forge-suite#91): `docs/PACKAGING.md` + `tests/test_needs.py`; recipe + optional flatpak, snapd → **1.4.0-2**
 - [x] AUR 1.4.0-2 (`3fc9891`) after Javier's local test
-- [ ] **F-16 #28** a test gave a stopped stand-in 5 s (flaky on a busy machine) → 20 s, committed; ships with the next release
+- [x] **F-16 #28** a test gave a stopped stand-in 5 s (flaky on a busy machine) → 20 s, committed; ships with 1.5.0
 
 ## At the next release
-- [ ] **The AUR description, at the next release** (Javier, 2026-10-09): the AUR `pkgdesc` (and `.SRCINFO`) gets the same "where it runs" words as the README, GitHub About and kognogos.org — distribution · desktop · plain text console. Not pushed on its own: AUR pushes stay one per proven version.
+- [x] **The AUR description, at the next release** (Javier, 2026-10-09): in the 1.5.0 recipe (17 Oct night): "Arch Linux / KognogOS, any desktop or none, works on a text console"
 
 ## v1.4.0 — the menu's keys from forgekit 0.10.0; History opens its menu; --hypeforge · 2026-10-08 (#24 #25 #26)
 *From Javier's first run inside hypeForge Settings. **released 2026-10-08 (GitHub + AUR; Javier on the installed package: "all perfect!")** (forgekit 0.10.0 must be on the AUR first).*
@@ -45,7 +60,7 @@
 - [ ] Release after his pass: push + signed tag, GitHub Release, AUR recipe (`depends` python-forgekit>=0.10.0), local makepkg, Javier installs, then AUR push; close #24 #25 #26
 
 ## Later — the run window (Javier, 2026-10-07 22:55, #23)
-- [ ] **#23** a nog run as a **progress bar** with the terminal **folded behind an arrow** (▲ closed / ▼ open); nog's yes/no and AUR questions as nogForge pop-ups — shape 1 needs nog to emit its questions as events (a nog issue when we take it); shape 2 (just the fold) is cheap. Javier: "another day"
+- [x] **#23** done 17 Oct night (above): the fold with the arrow; yes/no questions as the window's Yes/No bar (forgekit, since 1.1); the AUR menus stay in nog's screen until nog emits questions as events
 
 ## v1.3.0 — searches follow the typing; one-row filters · 2026-10-07 night (#21 #22)
 - [x] **#21** every search filters as you type: `FilterBar` posts `Searched` on `Input.Changed` — In-System at once, Install after `LIVE_WAIT` 0.5 s and from `LIVE_MIN` 2 characters (a timer reset per keystroke); the Search button removed; an emptied Install box clears the results
