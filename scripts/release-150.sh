@@ -28,10 +28,14 @@ echo "== pre-flight"
 [ -z "$(git status --porcelain)" ] || { echo "the working tree isn't clean: commit first (scripts/commit-overnight.sh)"; exit 1; }
 grep -q "__version__ = \"$VER\"" nogforge/__init__.py || { echo "nogforge/__init__.py isn't $VER"; exit 1; }
 grep -q "Version-$VER-" README.md || { echo "README badge isn't $VER"; exit 1; }
-grep -q "nogForge $VER\|nogforge $VER\|\"$VER\"" nogforge.1 || echo "  note: check the man page's version line by eye"
+grep -q "\"nogForge v$VER\"" nogforge.1 || { echo "the man page's .TH line isn't nogForge v$VER"; exit 1; }
+echo "  versions agree: code, README badge, man page, AUR recipe ($VER)"
 grep -q "^pkgver=$VER$" "$AUR/PKGBUILD" || { echo "$AUR/PKGBUILD isn't pkgver=$VER"; exit 1; }
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && { echo "tag $TAG exists already"; exit 1; }
-PYTHONDONTWRITEBYTECODE=1 python -W default -m unittest discover tests 2>&1 | tail -3
+echo "  running the 67 tests — about two minutes, nothing prints until they finish…"
+PYTHONDONTWRITEBYTECODE=1 python -W default -m unittest discover tests > "$WORK/tests.txt" 2>&1 \
+  || { tail -20 "$WORK/tests.txt"; echo "the tests failed: nothing was tagged or pushed"; exit 1; }
+grep -E "^Ran [0-9]+ tests" "$WORK/tests.txt"; tail -1 "$WORK/tests.txt"
 desktop-file-validate nogforge.desktop
 man --warnings -l nogforge.1 >/dev/null
 
