@@ -1,0 +1,20 @@
+# nogForge 1.5.0 bench · 2026-10-17 00:00 · with changes (VM)
+
+| step | result | notes |
+|---|---|---|
+| 2.2 Dashboard: Maintenance in the bar, 1-7 menu, Flatpak/Snap in Yours, Could go | **PASS** | Yours table: Source Yours Tier 1 Tier 2 Tier 3 / core 43 18 2 23 / extra 182 3 12 167 / multilib 5 4 0 1 / chaotic-aur 10 0 1 9 / AUR 10 0 4 ; Space: Could go: 56.0 MB — old downloads 56.0 MB, orphans 27 KB, old snap revisions 20 KB Package cache 85.7 MB, 29 files. Clean Up opens Maintenance: pick what goes; |
+| 2.3 In-System · All: Flatpak + Snap rows, base snaps Locked | **PASS** | 1173 rows; Flatpak rows 0 (); Snap rows 3: core, hello-world, snapd; Locked: core, snapd; column says ['Snap'] |
+| 2.4 p Repositories: Flatpak + Snap after the AUR; untick → rows go; tick back | **FAIL** | AssertionError: Flatpak and Snap listed: ['core', 'extra', 'multilib', 'chaotic-aur', 'aur', 'snap'] |
+| 2.5 Install 'calculator': repositories, AUR, Flatpak (with IDs), Snap; + Install | **FAIL** | AssertionError: nog's search answered |
+| 2.6 Enter on org.gnome.Calculator → review → Install → nog's window → flatpak asks → Yes | **FAIL** | AssertionError: no row 'org.gnome.Calculator'; first rows: [] (0 rows) |
+| 2.7 In-System → ✕ Uninstall on the Flatpak → review → nog's window → flatpak asks → Yes | **FAIL** | AssertionError: the new Flatpak is an In-System row after the install |
+| #27 Uninstall cliamp: nog's Keep question (yt-dlp, mpv uses it) in the window → Yes keeps it | **PASS** | questions, all answered Yes: ['nog: Keep yt-dlp? [Y/n]', ':: Do you want to remove these packages? [Y/n]']; cliamp gone, yt-dlp kept for mpv |
+| 2.8 Maintenance: five rows with sizes, the highlighted one explained, Clean Up (0) greyed | **PASS** | rows: [('cache', 9, 58.7), ('orphans', 1, 0.0), ('aur', 0, 0.0), ('flatpak', 0, 0.0), ('snap', 1, 0.0)] MB; empty ones not tickable; button Content('Clean Up the Ticked Ones (0) (c)') greyed; summary: About 56.0 MB could go · 3 of 5 categories have something · pacman's cache holds 85.7 MB, 25 versions stay The clean-up ; detail: removed by nog; root is needed |
+| 2.9 Space on old downloads + old snap revisions → c → nog asks once → Yes → rows at nothing | **PASS** | ticked ['cache', 'snap'] (before {'cache': 9, 'snap': 1}); title 'Cleaning up: cache, snap'; questions: ['nog: Clean up cache, snap? [y/N]']; after: {'cache': 0, 'orphans': 1, 'aur': 0, 'flatpak': 0, 'snap': 0} |
+| 2.10 c from the Dashboard opens Maintenance, runs nothing | **PASS** | c on the Dashboard opens Maintenance; no run window |
+| 2.11 6 → l nog Logs → the newest run → Enter shows it whole | **FAIL** | AssertionError: the newest run is the clean-up: '10/17/2026 12:00 AM remove cliamp javier 0 done \n no other log for this run ' |
+| 2.12 7 → m the manual; F1 on Maintenance → its page; Esc back | **FAIL** | AssertionError: the manual opens on Welcome |
+| 2.13 ? Keys: 1-7, Ctrl+M, c and k, Space on Maintenance | **FAIL** | AssertionError: '1-7' on the Keys page: /1 │ │ │ │ no │ │ │ │ 10/1 │ ==> Going along, but still used │ │ │ no │ yt-dlp goes too, but mpv uses it (optional: for video-sharing websites playback). │ │ │ 10/1 │ Kept means marked as installed on purpose (what `nog keep` does), so no removal takes │ │ │ no │ │ │ │ 10/1 │ nog: Keep yt-dlp? [Y/n] y │ │ │ no │ nog: Marking yt-dlp as installed on purpose (sudo pacman -D --asexplicit). │ │ │ 10/1 │ yt-dlp: install reason has been set to 'explicitly installed' │ │ │ no │ ▏ │ │ │ 10/1 │ ────────────────────────────────────────────────────────────────────────────────────────── │ │ │ no │ │ │ │ 10/1 │ Close (c) │ │ │ no │ │ │ │ 10/1 ╰ ────────────────────────────────────────────────────────────────────────────────────────────── ╯ │ └ ──────────────────────────────────────────────────────────────────────────────────────────────────────── ┘ ↑↓ move • Enter open the log • 6 a Activity • F1 help |
+| 2.14 4 Update: the page as before (sanity, no run) | **FAIL** | AssertionError |
+
+6 PASS · 8 FAIL · 0 SKIP

@@ -9,7 +9,12 @@
 # make-rc-packages.sh builds the whole "nog inside the app" set; this is the
 # one-app version (1.5.0, 2026-10-15).
 #
-#   scripts/make-rc-package.sh [rc-number]      (default 1)
+#   scripts/make-rc-package.sh [rc-number] [--worktree]      (default 1)
+#
+# --worktree (2026-10-16 night): build from the WORKING TREE instead of the last
+# commit — every tracked and untracked file that isn't ignored — for a bench run
+# before the commits exist (the commits are signed, and the signing key was
+# locked with Javier asleep). The log says which it was.
 #
 # The package lands in dist-rc/. Logs to logs/make-rc-package-<time>.log.
 set -euo pipefail
@@ -18,14 +23,25 @@ mkdir -p logs
 log="logs/make-rc-package-$(date +%Y%m%d-%H%M%S).log"
 ln -sfn "$(basename "$log")" logs/make-rc-package-latest.log
 exec > >(tee "$log") 2>&1
-rc="${1:-1}"
+rc=1; from_tree=""
+for a in "$@"; do
+  case "$a" in --worktree) from_tree=1 ;; *) rc="$a" ;; esac
+done
 OUT="$PWD/dist-rc"
 WORK="$(mktemp -d)"
 trap 'rm -rf --one-file-system "$WORK"' EXIT
 mkdir -p "$OUT"
 ver="$(sed -n 's/^__version__ = "\([0-9.]*\).*/\1/p' nogforge/__init__.py)rc$rc"
-echo "nogforge $ver from $(git log --format='%h %s' -1)"
-[ -z "$(git status --porcelain --untracked-files=no)" ] || echo "  NOTE: uncommitted changes; the package is built from the last commit"
+if [ -n "$from_tree" ]; then
+  tmp_index="$(mktemp)"; cp .git/index "$tmp_index" 2>/dev/null || true
+  tree="$(GIT_INDEX_FILE="$tmp_index" git add -A . >/dev/null && GIT_INDEX_FILE="$tmp_index" git write-tree)"
+  rm -f "$tmp_index"
+  echo "nogforge $ver from the WORKING TREE (tree $tree; last commit $(git log --format='%h' -1))"
+else
+  tree=HEAD
+  echo "nogforge $ver from $(git log --format='%h %s' -1)"
+  [ -z "$(git status --porcelain --untracked-files=no)" ] || echo "  NOTE: uncommitted changes; the package is built from the last commit (--worktree builds the tree)"
+fi
 python3 - ~/Programs/aur-nogforge/PKGBUILD "$WORK/PKGBUILD" "$ver" <<'PY'
 import re, sys
 src, out, ver = sys.argv[1:]
@@ -39,7 +55,7 @@ s = s.replace("assert __version__ == '${pkgver}', __version__",
               "assert __version__.split('-')[0] == '${pkgver}'.split('rc')[0], __version__")
 open(out, "w").write(s)
 PY
-git archive --prefix="nogforge-$ver/" -o "$WORK/nogforge-$ver.tar.gz" HEAD
+git archive --prefix="nogforge-$ver/" -o "$WORK/nogforge-$ver.tar.gz" "$tree"
 (cd "$WORK" && script -qec "PKGDEST='$OUT' makepkg -f --nodeps --noconfirm" /dev/null </dev/null | grep -vE '^\s+(Compiling|Downloaded|Downloading)' )
 ls -la "$OUT"/nogforge-"$ver"-*.pkg.tar.zst
 echo "OK: built nogforge $ver into dist-rc/"
