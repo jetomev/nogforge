@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the README screenshots (v0.1.0) — Textual SVGs at 100 columns.
+"""Regenerate the README screenshots (v0.1.0; 1.5.0 adds Flatpak/snap rows and the Maintenance page) — Textual SVGs at 100 columns.
 
 Run from the repo root (forgekit on PYTHONPATH if not installed):
     python docs/screenshots/generate.py
@@ -30,7 +30,7 @@ def p(name, version, desc, tier, source, explicit=True, protected=None):
 
 
 SAMPLE = {
-    "list": {"nog": "1.7.0", "kind": "list", "packages": [
+    "list": {"nog": "2.0.0", "kind": "list", "packages": [
         p("alacritty", "0.17.0-1", "A cross-platform, OpenGL terminal emulator", 2, "extra"),
         p("dolphin", "26.08.1-1", "KDE File Manager", 2, "extra"),
         p("firefox", "143.0.2-1", "Fast, Private & Safe Web Browser", 2, "extra"),
@@ -43,8 +43,30 @@ SAMPLE = {
         p("thunderbird", "156.0-1", "Standalone mail and news reader from mozilla.org", 3, "extra"),
         p("vlc", "3.0.23_2-16", "Multi-platform MPEG, VCD/DVD, and DivX player", 3, "extra"),
         p("glibc", "2.44", "GNU C Library", 1, "core", explicit=False, protected="part of the base system"),
+        # 1.5.0 (nog 2.0.0): Flatpak apps and snaps are rows too
+        {**p("com.github.tchx84.Flatseal", "2.4.1", "Manage Flatpak permissions", 3, "flatpak"),
+         "remove_as": "com.github.tchx84.Flatseal"},
+        {**p("hello", "2.10", "GNU Hello, the classic greeting (a snap)", 3, "snap"), "remove_as": "hello"},
+        {**p("core20", "20260901", "the system under the snaps (a base snap)", 3, "snap", explicit=False,
+             protected="the system under the snaps"), "remove_as": "core20"},
     ]},
-    "search": {"nog": "1.7.0", "kind": "search", "query": "paint", "results": [
+    "clean": {"nog": "2.0.0", "kind": "clean", "total_bytes": 5_466_000_000,
+              "cache": {"files": 4216, "bytes": 17_654_338_424, "kept_files": 1599, "kept_bytes": 12_675_810_549},
+              "categories": [
+        {"id": "cache", "what": "pacman's download cache: 515 old versions of packages", "items": 515,
+         "bytes": 4_900_000_000, "names": [], "how": "removed by nog; root is needed"},
+        {"id": "orphans", "what": "packages installed as dependencies that nothing needs any more: 2", "items": 2,
+         "bytes": 300_000_000, "names": ["go", "go-tools"], "how": "pacman -Rns: pacman shows the list and asks first"},
+        {"id": "aur", "what": "yay's build trees from AUR packages: 0", "items": 0, "bytes": 0, "names": [],
+         "how": "removed by nog; your own files, so no password"},
+        {"id": "flatpak", "what": "Flatpak runtimes no installed app uses: 1", "items": 1, "bytes": 200_000_000,
+         "names": ["org.gnome.Platform/x86_64/49"], "how": "flatpak uninstall --unused: flatpak shows its list and asks first"},
+        {"id": "snap", "what": "old snap revisions snapd kept after updates: 1", "items": 1, "bytes": 66_000_000,
+         "names": ["core20 (revision 2866)"], "how": "snap remove --revision, one by one; root is needed"},
+    ]},
+    "search": {"nog": "2.0.0", "kind": "search", "query": "paint", "results": [
+        {"name": "org.kde.krita", "version": "6.0.4", "description": "Digital painting, creative freedom (Flatpak)", "source": "flatpak",
+         "remote": "flathub", "installed": False, "tier": 3, "install_as": "flatpak/org.kde.krita"},
         {"name": "krita", "version": "6.0.4-2", "description": "Edit and paint images", "source": "extra",
          "installed": False, "tier": 3},
         {"name": "pinta", "version": "3.0.3-1", "description": "Drawing/editing program modeled after Paint.NET",
@@ -77,7 +99,7 @@ import json, os, sys
 d = json.load(open(os.environ["NOGFORGE_TEST_DATA"]))
 a = sys.argv[1:]
 if a == ["--version"]:
-    print("nog 1.7.0"); sys.exit(0)
+    print("nog 2.0.0"); sys.exit(0)
 arg = lambda f: a[a.index(f) + 1].split(",") if f in a else []
 if a[0] == "update":
     keep, promote = arg("--keep"), arg("--promote")
@@ -119,12 +141,16 @@ async def main() -> None:
     with mock.patch("nogforge.app.count_flatpaks", return_value=2), \
             mock.patch("nogforge.app.count_snaps", return_value=1):
         app = NogForgeApp(logs=logs, cache_dir=cache)
-        app.set_title_status = lambda text: NogForgeApp.set_title_status(app, "your-computer · nog 1.7.0")
+        app.set_title_status = lambda text: NogForgeApp.set_title_status(app, "your-computer · nog 2.0.0")
         async with app.run_test(size=(100, 32)) as pilot:
             await pilot.pause(2.0)
             shot(app, "01-dashboard")
             await pilot.press("2")
             await pilot.pause(0.6)
+            lst = app.query_one("#is-list")          # 1.5.0: scroll to the Flatpak and snap rows at the end
+            lst.focus()
+            lst.highlighted = [r.package.name for r in lst.rows].index("hello")
+            await pilot.pause(0.4)
             shot(app, "02-in-system")
             await pilot.press("3")
             for ch in "paint":
@@ -150,10 +176,19 @@ async def main() -> None:
             await pilot.pause(1.0)
             ready.focus()
             shot(app, "05-update")
-            await pilot.press("5", "a")               # 1.4.0: 5 opens History's menu, a = Activity
+            await pilot.press("5")                    # 1.5.0: 5 is Maintenance (History 6, Help 7)
+            await pilot.pause(0.6)
+            mt = app.query_one("#mt-list")
+            mt.focus()
+            mt.select("cache")
+            mt.select("snap")
+            mt.highlighted = 0
+            await pilot.pause(0.4)
+            shot(app, "10-maintenance")
+            await pilot.press("6", "a")               # 6 opens History's menu, a = Activity
             await pilot.pause(0.5)
             shot(app, "06-activity")
-            await pilot.press("5", "l")               # l = nog Logs
+            await pilot.press("6", "l")               # l = nog Logs
             await pilot.pause(0.5)
             shot(app, "07-nog-logs")
 
