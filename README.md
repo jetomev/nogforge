@@ -1,3 +1,6 @@
+> ## 📦 nogForge has moved into the [Forge Suite](https://github.com/jetomev/forge-suite/tree/main/nogforge)
+> Since **22 October 2026** nogForge lives in **[jetomev/forge-suite](https://github.com/jetomev/forge-suite)**, with its full history. New releases are tagged `nogforge-vX.Y.Z` there, and issues go there too. This repository is archived: its releases (up to 1.5.0) and issues stay readable, and the AUR package `nogforge` keeps working.
+
 # nogForge
 
 > Packages, the KognogOS way: what's installed, searching and installing, updates and the clean-up, for every source — the repositories, the AUR, Flatpak and Snap — in plain words, in a terminal. The decisions are **nog**'s; nogForge shows them.
